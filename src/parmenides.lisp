@@ -1,74 +1,74 @@
 ;;; -*- Mode:Lisp; Package:Parmenides -*-
 
-;;;; 	PARMENIDES -- A hierarchical class-based frame language.
+;;;;    PARMENIDES -- A hierarchical class-based frame language.
 
 ;;; Copyright (c) 1985, 1989 Peter Shell and Carnegie Mellon University.
 ;;; To obtain a copy of this software, please contact:
-;;;	Peter Shell
-;;;	School of Computer Science
-;;;	Carnegie Mellon University
-;;;	Pittsburgh, PA  15213
+;;;     Peter Shell
+;;;     School of Computer Science
+;;;     Carnegie Mellon University
+;;;     Pittsburgh, PA  15213
 ;;;
 ;;; The Parmenides user's manual is available in WeH 7121 or at the CMT
 ;;; and on-line as: /afs/cs/usr/pshell/parmenides/parmenides.doc.
 ;;; Implemented in CommonLisp for RuleFermi starting 17-May-86.
 ;;; This file should be loaded before it is compiled.
 
-;;; 	Some of the original Framekit functionality is preserved;
-;;; 	however the internals have been re-designed and re-implemented, so
-;;; 	this version will bear as much similarity to Loops as to Framekit.
-;;; 	It is also influenced by the Slisp implementation of Defstruct,
-;;; 	but it is portable.
-;;; 	Parmenides is faster because it represents frames with arrays, and
-;;;	so is able to define pre-compiled slot and facet accessor functions
-;;;	for each slot or facet.  See the manual for complete details.
+;;;     Some of the original Framekit functionality is preserved;
+;;;     however the internals have been re-designed and re-implemented, so
+;;;     this version will bear as much similarity to Loops as to Framekit.
+;;;     It is also influenced by the Slisp implementation of Defstruct,
+;;;     but it is portable.
+;;;     Parmenides is faster because it represents frames with arrays, and
+;;;     so is able to define pre-compiled slot and facet accessor functions
+;;;     for each slot or facet.  See the manual for complete details.
 ;;;
 ;;; Source file:  /../ml/usr/pshell/parmenides/parmenides.lisp
 ;;; NOTE: This file should be loaded before it is compiled.
 ;;; -------------------------------------------------------------------- ;;;
 ;;;                          --- CHANGE LOG ---
 ;;;
-;;;   9-Dec-92	Pete Shell.  Added the :facets c-slot.  If its value is :NO
-;;;   		then none of the class's slots have facets, even if their
-;;;   		values are lists.
+;;;   9-Dec-92  Pete Shell.  Added the :facets c-slot.  If its value is :NO
+;;;             then none of the class's slots have facets, even if their
+;;;             values are lists.
 ;;;
 ;;;   21-Oct-92  Pete Shell.  Optimized write-accessor-functions and
-;;;   		 write-facet-refs.
-;;;                          
-;;;   6-Dec-89	 Daniel Borrajo.  Added a freelist module.
-;;; 
+;;;              write-facet-refs.
+;;;
+;;;   6-Dec-89   Daniel Borrajo.  Added a freelist module.
+;;;
 ;;;   15-May-89  Added a special called 'oldval' to the variables which
-;;;		 are accessible by demons.
-;;; 
+;;;              are accessible by demons.
+;;;
 ;;;   11-Apr-89  Fixed a bug in maybe-fplist-append which caused Parmenides
-;;;		 to break when defining a sub-class of a class which has
-;;;		 the propagate class facet, and a slot is being redefined.
-;;; 
-;;;   1-Mar-89	 Daniel Borrajo. Also for version 1.5.
-;;;		 Added multi-lingual capability.  Virtually
-;;;		 all output to the user is done via ml-format, ml-cerror or
-;;;		 ml-error.  These macros take a symbol naming the message to
-;;;		 print, and find the corresponding message string in the
-;;;		 correct language.  Now the installer has to define
-;;;		 *PA-PATHNAME*, in this file, so that Parmenides knows where
-;;;		 to load the message files for each language.
+;;;              to break when defining a sub-class of a class which has
+;;;              the propagate class facet, and a slot is being redefined.
+;;;
+;;;   1-Mar-89   Daniel Borrajo. Also for version 1.5.
+;;;              Added multi-lingual capability.  Virtually
+;;;              all output to the user is done via ml-format, ml-cerror or
+;;;              ml-error.  These macros take a symbol naming the message to
+;;;              print, and find the corresponding message string in the
+;;;              correct language.  Now the installer has to define
+;;;              *PA-PATHNAME*, in this file, so that Parmenides knows where
+;;;              to load the message files for each language.
 ;;;   6-Feb-89   For version 1.5: Added ability to Parmenides to be in its
-;;;		 own package.
-;;;		 Renamed class-of to pa-class-of to avoid interference with
-;;;		 the clx class-of.
-;;;		 Changed *ALL* to :*ALL*.
+;;;              own package.
+;;;              Renamed class-of to pa-class-of to avoid interference with
+;;;              the clx class-of.
+;;;              Changed *ALL* to :*ALL*.
 ;;;   9-Mar-88   When inheriting a slot from a super-frame, def-frame will
-;;;		 now inherit all facets in superframe not in inherited slot.
+;;;              now inherit all facets in superframe not in inherited slot.
 ;;;   8-Mar-88   Made remove-frame mark it removed by sticking a NIL in the
-;;;		 class position.  Took away :frame-type and :framep plist
-;;;		 properties for instances.
-;;;   20-May-87	 Extended make-frame to inherit for non-faceted slots too.
+;;;              class position.  Took away :frame-type and :framep plist
+;;;              properties for instances.
+;;;   20-May-87  Extended make-frame to inherit for non-faceted slots too.
 ;;;   15-May-87  Added :cache keyword arg to add-slot. Propagates to subclasses
-;;;		 and adds added slotname to cache list if cache is true.
-;;;		 Implemented get-immediate-facet, get-immediate-slot.
-;;;		 Fixed local-p.
+;;;              and adds added slotname to cache list if cache is true.
+;;;              Implemented get-immediate-facet, get-immediate-slot.
+;;;              Fixed local-p.
 ;;;   29-Apr-87  Added support for inverse relations, implemented add-slot,
-;;;		 add-cslot.
+;;;              add-cslot.
 ;;;   23-Feb-87.  Changed def-frame so it no longer takes a <parents>
 ;;; argument but instead the parents are specified through the is-a cslot.
 ;;; Also, NIL now means facetless slots.
@@ -90,9 +90,9 @@
 ;;; so much space since there are no pre-defined setting functions for facets,
 ;;; and pre-defining them would take up too much room.
 ;;;   7-SEP-86  PShell.  Made def-frame not define facet accessors and setf
-;;; 	methods for other than the first facet, since it takes up so much
-;;; 	space and time. Also took out setf and access functions for class
-;;; 	facets.  Added make-frame, make-frame0 and make-slot.
+;;;     methods for other than the first facet, since it takes up so much
+;;;     space and time. Also took out setf and access functions for class
+;;;     facets.  Added make-frame, make-frame0 and make-slot.
 ;;;   17-MAY-86  PShell Created
 
 ;;; TO DO:
@@ -106,7 +106,7 @@
 ;;; Either warn about or let it work with, lispy frame names.
 ;;; Make add-slot handle inverses too.
 ;;;  make make-frame0 work with (unfaceted) *ALL* for slots-inherited slot.
-;;; 	   document optional specification of combo-type.
+;;;        document optional specification of combo-type.
 ;;; Add an if-made facet to compute the value of a slot when the instance
 ;;;    is made.  The computed value would be stored in the value facet.
 ;;; Index-plist stuff should be replaced by something more efficient.
@@ -189,17 +189,17 @@
 (proclaim '(special
             framename slotname facetname frame snum facetnum newval oldval))
 
-(defvar *PARMENIDES-TERSE* NIL)	;;If true, then suppress Parmenides messages.
+(defvar *PARMENIDES-TERSE* NIL) ;;If true, then suppress Parmenides messages.
 
-(defvar *THINGS-TO-EVAL*)	;;For internal def-frame use.
-(defvar *DEFAULT* (list NIL))	;;Unique default value, for make-frame-slot
+(defvar *THINGS-TO-EVAL*)       ;;For internal def-frame use.
+(defvar *DEFAULT* (list NIL))   ;;Unique default value, for make-frame-slot
 
 ;;; FREELIST variables
 ;;
 ;; Variable that holds the structure of arrays for freelist. Arrays are going to
 ;; be normally parmenides frames or frulekit tokens.
 ;;
-(defvar *FREE-LIST* (make-array 20 :initial-element nil	:adjustable t))
+(defvar *FREE-LIST* (make-array 20 :initial-element nil :adjustable t))
 
 ;;
 ;; Same as before but for adjustable arrays
@@ -469,17 +469,17 @@
 
 ;;; Structure for a Parmenides frame. This has not been a recording.
 (defstruct pa-frame
-  propagatep	  ;;T iff it's a propagating kind of frame.
-  index-plist	  ;;nested plist associating slot, facet names w/ array indices
-  slots		  ;;list of all local slots, facets & default vals.
-  c-slots	  ;;plist of slots which are only stored with the class
-  numslots	  ;;used when the frame is adjustable
-  name		  ;;name of the frame
-  snames	  ;;list of slot names
-  rel-slots	  ;;list of slot names which are relations
+  propagatep      ;;T iff it's a propagating kind of frame.
+  index-plist     ;;nested plist associating slot, facet names w/ array indices
+  slots           ;;list of all local slots, facets & default vals.
+  c-slots         ;;plist of slots which are only stored with the class
+  numslots        ;;used when the frame is adjustable
+  name            ;;name of the frame
+  snames          ;;list of slot names
+  rel-slots       ;;list of slot names which are relations
   )
 
-(defvar *MARKED-CLASSES* NIL)	 ;;For marker propagation
+(defvar *MARKED-CLASSES* NIL)    ;;For marker propagation
 
 (defvar !!inheritance-type :dfs) ;; defaults to depth-first search
 ;; dfs = depth first search (stopping
@@ -488,7 +488,7 @@
 
 
 ;;; -------------------------------------------------------------------
-;;;		FREELIST MODULE
+;;;             FREELIST MODULE
 ;;; -------------------------------------------------------------------
 
 ;;
@@ -499,7 +499,7 @@
 
   (defmacro first-position (frame)
     `(aref ,frame 0))
-  
+
   (defmacro get-frame-size (frame)
     `(car (array-dimensions ,frame)))
 
@@ -512,7 +512,7 @@
 
 
   ;;
-  ;; Macro that looks for a free frame. If there isn't, it creates and 
+  ;; Macro that looks for a free frame. If there isn't, it creates and
   ;; returns it. If there is not room for frames of that size, it first
   ;; adjust the freelist array.
   ;;
@@ -525,17 +525,17 @@
                                            :initial-element NIL)))
          (let ((,frame-name (aref free-list ,size)))
            (cond (,frame-name
-                  ;;		  (format T "Getting a free frame of size ~S~&" ,size)
+                  ;;              (format T "Getting a free frame of size ~S~&" ,size)
                   (setf (aref free-list ,size)
                         (first-position ,frame-name))
                   (setf (first-position ,frame-name) nil)
                   ,frame-name)
                  (T (create-frame ,size ,adjustable)))))))
-  
+
   ;;
   ;; Macro that pushes a frame into the free list.
   ;;
-  
+
   (defmacro release-frame (frame)
     (let ((frame-name (gentemp "frame-")))
       `(let* ((,frame-name ,frame)
@@ -556,7 +556,7 @@
 
 
 ;;; -------------------------------------------------------------------
-;;;		BASIC RETRIEVAL FUNCTIONS:
+;;;             BASIC RETRIEVAL FUNCTIONS:
 ;;; -------------------------------------------------------------------
 
 ;;; For predicates which return 2 values.  For the first member of seq such
@@ -588,7 +588,7 @@
           ((and snum facetnum)
            (values (aref (aref frame snum) facetnum) T))
           ((null (isas framename)) (values NIL NIL))
-          (T (some2 #'(lambda (parent)	;;depth-first inheritance
+          (T (some2 #'(lambda (parent)  ;;depth-first inheritance
                         (get-facet parent slotname facetname))
                     (isas framename))))))
 
@@ -732,7 +732,7 @@
 
 
 ;;; -----------------------------------------------------------------------
-;;; 		BASIC STORAGE FUNCTIONS:
+;;;             BASIC STORAGE FUNCTIONS:
 ;;; -----------------------------------------------------------------------
 
 (defun add-to-facet (frame slotname facetname filler) ;Adds filler to facet
@@ -831,12 +831,12 @@
 (defun set-class&instances-facet (frame framename sname fname snum fnum newval
                                   depth dfnum prefacetnum postfacetnum
                                   demonsp propagatep)
-  (if (not (and snum fnum))	;;This should never happen
+  (if (not (and snum fnum))     ;;This should never happen
       (ml-error :set-slot-facet
                 sname fname (frame-class frame)))
   (let ((oldval (aref (aref frame snum) fnum)))
     (when demonsp
-      (if prefacetnum	;;if there is an if-added demon on the slot
+      (if prefacetnum   ;;if there is an if-added demon on the slot
           (let ((demon (aref (aref frame snum) prefacetnum))
                 (framename framename)
                 (slotname sname)
@@ -854,7 +854,7 @@
     (setf (aref (aref frame snum) fnum) newval)
     (handle-set-inverse-facet frame framename newval sname fname snum fnum)
     (when demonsp
-      (if postfacetnum	;;if there is an if-added demon on the slot
+      (if postfacetnum  ;;if there is an if-added demon on the slot
           (let ((demon (aref (aref frame snum) postfacetnum))
                 (framename framename)
                 (slotname sname)
@@ -869,7 +869,7 @@
                       (facetname fname))
                   (eval cdemon))))))
     (if (and (classp frame) propagatep)
-        (let ((depth (1+ depth)))	   ;;instances are 1 away from the class.
+        (let ((depth (1+ depth)))          ;;instances are 1 away from the class.
           (dolist (instance (maybe-instances-of framename))
             (if (>= (aref (aref instance snum) dfnum) depth)
                 (set-class&instances-facet instance NIL sname fname snum fnum
@@ -1029,7 +1029,7 @@
         ((null slot) T)
       (let* ((slot-spec (getf slot-index (assure-keyword (car slot))))
              (snum (car slot-spec)))
-        (cond ((consp (cdr slot-spec))	;;That means it's faceted
+        (cond ((consp (cdr slot-spec))  ;;That means it's faceted
                (do ((facet (cadr slot) (cddr facet)))
                    ((null facet) T)
                  (let ((facetnum (getf (cdr slot-spec) (assure-keyword (car facet)))))
@@ -1054,7 +1054,7 @@
             (slot (car slots) (car slots)))
            ((null slots) T)
         (let ((slot-spec (getf slot-index slot)))
-          (cond ((consp (cdr slot-spec))	;;That means it's faceted
+          (cond ((consp (cdr slot-spec))        ;;That means it's faceted
                  (let ((facet (cadr slots)))
                    (set-facet-demons0 framename frame slot (car facet)
                                       (cadr facet) 0 :slots-only)
@@ -1133,7 +1133,7 @@
 
 
 ;;; -----------------------------------------------------------------------
-;;;		COPY-FRAME
+;;;             COPY-FRAME
 ;;; -----------------------------------------------------------------------
 ;;; Modified 24-Mar-87: If newslots is provided then for each slot in <newslots>,
 ;;; copies the data structure inside that slot in <frame>.
@@ -1176,7 +1176,7 @@
     (do ((slote index (cddr slote))
          (slotnum 0 (1+ slotnum)))
         ((null slote) a2)
-      (cond ((not (consp (cdadr slote)))	;;not faceted
+      (cond ((not (consp (cdadr slote)))        ;;not faceted
              (setf (aref a2 slotnum)
                    (aref a1 slotnum)))
             ((getf newslots (current-to-keyword (car slote)))
@@ -1204,7 +1204,7 @@
         (T thing)))
 
 ;;; ---------------------------------------------------------------
-;;; 	BASIC TOP-LEVEL FRAME FUNCTIONS
+;;;     BASIC TOP-LEVEL FRAME FUNCTIONS
 ;;; ---------------------------------------------------------------
 
 ;;; For internal frame printing.
@@ -1274,8 +1274,8 @@
   (format stream " ~12S " sname)
   (cond ((or (eq facetp :NO) (atom (cdr index)))  ;;then the slot is facet-less
          (if savep
-             (if (and classp (not (eq facetp :NO))  ;; Write it as faceted 
-                      (consp slot))		    ;; even though it's not.
+             (if (and classp (not (eq facetp :NO))  ;; Write it as faceted
+                      (consp slot))                 ;; even though it's not.
                  (format stream "'\(:VALUE ~S\)~%" slot)
                  (format stream "~S~%" (if classp slot (maybe-quote slot))))
              (format stream "~S~%" slot)))
@@ -1310,10 +1310,10 @@
 (defun write-header (frame name savep make-fn class-frame stream)
   (let ((classname (frame-class class-frame)))
     (cond ((and savep
-                (eq frame class-frame))		;; then it's a class
+                (eq frame class-frame))         ;; then it's a class
            (format stream "\(DEF-FRAME ~S " classname)
            (format stream " ~S" (pa-frame-c-slots (frame-type-of frame))))
-          (savep				;; else it's an instance
+          (savep                                ;; else it's an instance
            (format stream "\(~S ~S ~S" make-fn
                    (list 'quote classname) (if name (list 'quote name))))
           ((classp frame)
@@ -1416,7 +1416,7 @@
            (value (if facets (eval (cadr contents)) contents)))
       (when (and value (invertible-relation usname))
         (let ((invsname (get-slot usname :inverse-name)))
-          (if (consp value)	;;multiple frames in range
+          (if (consp value)     ;;multiple frames in range
               (dolist (range value)
                 (update-range-class-value invsname range name facets))
               (update-range-class-value invsname value name facets))))))
@@ -1426,7 +1426,7 @@
            (value (cadr plist)))
       (when (and value (invertible-relation usname))
         (let ((invsname (get-slot usname :inverse-name)))
-          (if (consp value)	;;multiple frames in range
+          (if (consp value)     ;;multiple frames in range
               (dolist (range value)
                 (update-range-class-cplist-value invsname range name))
               (update-range-class-cplist-value invsname value name)))))))
@@ -1550,7 +1550,7 @@
 ;;            (value (if facets (eval (cadr contents)) contents)))
 ;;       (when (and value (invertible-relation usname))
 ;;         (let ((invsname (get-slot usname :inverse-name)))
-;;           (if (consp value)	;;multiple frames in range
+;;           (if (consp value)  ;;multiple frames in range
 ;;               (dolist (range value)
 ;;                 (update-range-class-value invsname range name facets))
 ;;               (update-range-class-value invsname value name facets))))))
@@ -1560,7 +1560,7 @@
 ;;            (value (cadr plist)))
 ;;       (when (and value (invertible-relation usname))
 ;;         (let ((invsname (get-slot usname :inverse-name)))
-;;           (if (consp value)	;;multiple frames in range
+;;           (if (consp value)  ;;multiple frames in range
 ;;               (dolist (range value)
 ;;                 (update-range-class-cplist-value invsname range name))
 ;;               (update-range-class-cplist-value invsname value name)))))))
@@ -1922,10 +1922,10 @@
                (push new-ins new-instances)
                (let ((newval (copy-generic-thing slot-data-structure)))
                  (if (and propagatep (arrayp newval) (not (eq instance frame)))
-                     (incf (aref newval 1)))		;;depth facet
+                     (incf (aref newval 1)))            ;;depth facet
                  (setf (aref new-ins (1- slotnum)) newval)))
              (set-instances-of classname (nreverse new-instances)))
-           (when cache	;;propagate to sub-classes and add to cache class slot
+           (when cache  ;;propagate to sub-classes and add to cache class slot
              (let ((c-slots (pa-frame-c-slots pftype))
                    (subclasses (inverse-isas classname)))
                (my-maybe-nconc slotname (getf c-slots :cache))
@@ -2013,7 +2013,7 @@
   (if (and boolean (not *READ-ONLY*)) (copy-vector value) value))
 
 ;;((not faceted)
-;; (if (eq sval *DEFAULT*)			     ;;if not provided then
+;; (if (eq sval *DEFAULT*)                           ;;if not provided then
 ;;     (setq sval (aref default-frame snum))))       ;;use default
 
 ;;; Added 27-Apr-87
@@ -2135,11 +2135,11 @@
                                 (if (memq (assure-keyword (cadr sname))
                                           '(:APPEND :NCONC))
                                     (setq appendp T))
-                                (return (cadr fi-entry))))	 ;;from dolist
+                                (return (cadr fi-entry))))       ;;from dolist
                              ((eq (assure-keyword sname) usname)
                               (setq appendp
                                     (assure-keyword (cddr fi-entry)))
-                              (return (cadr fi-entry))))))))	 ;;from dolist
+                              (return (cadr fi-entry))))))))     ;;from dolist
               fi-alist))))
     (cond ((and related-frames (or (consp related-frames)
                                    (arrayp related-frames)
@@ -2151,7 +2151,7 @@
                               (ia-facetplist-append
                                sval (get-slot-ref usname related-frames
                                                   facetp
-                                                  ;;							  (arrayp related-frames)
+                                                  ;;                                                      (arrayp related-frames)
                                                   NIL))))
                   (if (and facetp propagatep) (setf (aref sval 1) 0)))
                  ((and (not (eq sval *DEFAULT*))
@@ -2167,7 +2167,7 @@
                                   (find-propagatep related-frames)
                                   (get-slot-ref usname related-frames
                                                 facetp
-                                                ;;			(arrayp related-frames)
+                                                ;;                      (arrayp related-frames)
                                                 :FIRST)))
                              sval))))))
           ((not (eq sval *DEFAULT*))
@@ -2372,7 +2372,7 @@
 
 (defun translate-all (val parent)
   (cond ((eq val :*ALL*)
-         (cdr (get-slot-names parent)))		;;Avoid %class
+         (cdr (get-slot-names parent)))         ;;Avoid %class
         ((eq val *DEFAULT*)
          NIL)
         (T val)))
@@ -2548,7 +2548,7 @@
                  (cond ((eq prev plist)
                         (setf orig (cddr orig))
                         (setq prev orig))
-                       (T		      
+                       (T
                         (setf (cddr prev) (cddr plist))
                         (setq plist prev)))
                  (if (not (eq prev plist)) (setq prev (cddr prev)))))))))
@@ -2682,8 +2682,8 @@
       (do* ((fp2 fp2 (cddr fp2)))
            ((null fp2) (nreverse extra-fp))
         (when (and (consp fp1) (not-getf fp1 (car fp2)))
-          ;;		   (not (eq (car fp2) :DEPTH))
-          ;;		   (not (eq (car fp2) :VALUE))
+          ;;               (not (eq (car fp2) :DEPTH))
+          ;;               (not (eq (car fp2) :VALUE))
           (push (car fp2) extra-fp)
           (push (cadr fp2) extra-fp))))))
 
@@ -2904,7 +2904,7 @@
    (if (and propagatep (= fnum 0))
        `(defun ,set-fn-name (frame value)
           (setf (aref (aref frame ,snum) ,fnum) value)
-          (setf (aref (aref frame ,snum) 1) 0))	;;set depth facet to 0
+          (setf (aref (aref frame ,snum) 1) 0)) ;;set depth facet to 0
        `(defun ,set-fn-name (frame value)
           (setf (aref (aref frame ,snum) ,fnum) value)))))
 
@@ -2936,7 +2936,7 @@
   (def-frame* 'relation ()
     '(:combination-type :FIRST
       :slots-inherited (value :*ALL*)
-      :has-inverses NIL	;; Indicates if the relation has inverses.
+      :has-inverses NIL ;; Indicates if the relation has inverses.
       :inverse-name NIL))
   )
 

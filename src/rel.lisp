@@ -9,6 +9,6 @@
   (def-frame* 'relation ()
     '(:combination-type :FIRST
       :slots-inherited (value :*ALL*)
-      :has-inverses NIL	;; Indicates if the relation has inverses.
+      :has-inverses NIL ;; Indicates if the relation has inverses.
       :inverse-name NIL))
 )
