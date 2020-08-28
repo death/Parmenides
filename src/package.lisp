@@ -81,4 +81,4 @@
            #:!!inheritance-type
            #:!!inheritance-link
            #:*parmenides-terse*
-           ))
+           #:set-language))

@@ -1,6 +1,6 @@
 (def-frame living-thing nil (extendable t propagate t)
-   breathes (value 'yes)
-   eats regularly)
+  breathes (value 'yes)
+  eats regularly)
 (def-frame person (living-thing) (extendable t propagate t if-added foo)
    legs (value 2)
    talks (value 'yes))

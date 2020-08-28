@@ -52,9 +52,9 @@
 
 (def-frame leg5 (part-of table) :a b)
 (setq leg2 (make-leg2 'leg2a :location '(value wall)
-      	   	      :made-from '(value (bark))))
+                      :made-from '(value (bark))))
 (setq leg3 (make-leg2 'leg3a :part-of 'table
-      	   	      :made-from '(value (bark))))
+                      :made-from '(value (bark))))
 
 (def-frame input (propagate t)
   :under nil
@@ -93,7 +93,7 @@
   `(let ((fname (car ',form)))
      (pushnew fname *FUNCTIONS-TO-TEST*)
      (push (cons ',(cdr form) ',output)
-	   (get fname :testlist))))
+           (get fname :testlist))))
 
 ;;; Example: (test-cases 1+ ((1 . 2) (-1 . 0)))
 (defmacro test-cases (fname cases)
@@ -106,10 +106,10 @@
     (format T "Testing ~A on ~A..." fname (car testcase))
     (let ((res (eval `(,fname ,@(car testcase)))))
       (cond ((not (equal res (cdr testcase)))
-	     (cerror "Try next test case~%"
-		     "~%oops, ~A returned ~A instead of expected ~A~%"
-		     fname res (cdr testcase)))
-	    (T (format T "~A, correct.~%" res))))))
+             (cerror "Try next test case~%"
+                     "~%oops, ~A returned ~A instead of expected ~A~%"
+                     fname res (cdr testcase)))
+            (T (format T "~A, correct.~%" res))))))
 
 ;;; Top-level testing function.
 (defun test-all ()
@@ -127,17 +127,17 @@
 (def-frame is-part-of (:is-a (relation))
   :combination-type first
   :slots-inherited (value :*ALL*))
- 
+
 (def-frame truck ()
    :color blue
    :weight 10000
    :material steel)
- 
+
 (def-frame door (:is-part-of (truck))
   :is-part-of truck
   :width 3
   :height 2)
- 
+
 (def-frame more (:is-a door)
   :width 4)
 
@@ -234,11 +234,11 @@
 
 (defparameter *size-slot-values* NIL)
 (do-facets (name val :size-slot 'd4)
-	   (push val *size-slot-values*))
+           (push val *size-slot-values*))
 (test-case (equal *size-slot-values* '(0 green)) T)
 (test-case (isa-or-instance 'person 'living-thing) (living-thing))
 (test-case (isa-or-instance (frame 'person) 'living-thing) (living-thing))
-(test-case (save-frame 'door) NIL)	;; Just calling it tests it is defined
+(test-case (save-frame 'door) NIL)      ;; Just calling it tests it is defined
 (test-case (pp-frame 'door) NIL)
 (define-facet-getter door :size-slot :depth)
 (define-facet-setter door :size-slot :depth)

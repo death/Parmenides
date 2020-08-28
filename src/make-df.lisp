@@ -7,7 +7,7 @@
            (setf free-list (adjust-array free-list (1+ ,size))))
        (let ((,frame-name (aref free-list ,size)))
          (cond (,frame-name
-                ;;		  (format T "Getting a free frame of size ~S~&" ,size)
+                ;;                (format T "Getting a free frame of size ~S~&" ,size)
                 (setf (aref free-list ,size)
                       (first-position ,frame-name))
                 (setf (first-position ,frame-name) nil)
