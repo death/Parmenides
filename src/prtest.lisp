@@ -1,7 +1,7 @@
 ;;; This file contains code which tests Parmenides.  It attempts to every
 ;;; user-level function, and tests most of its functionality.
 
-(use-package "PARMENIDES")
+(use-package :parmenides)
 
 (format T "Testing Parmenides.~%~%")
 
@@ -27,7 +27,7 @@
 (setq b1 (make-baby 'baby1 :cries '(value always)))
 ;;; User relation testing
 
-(def-frame part2 (is-a (pa:relation))
+(def-frame part2 (is-a (relation))
   :combination-type append
   :slots-inherited (value '((location first) made-from)))
 
@@ -41,7 +41,7 @@
   :made-from (value '(cherry))
   :weight 10)
 
-(def-frame part-of (:is-a pa:relation :propagate nil)
+(def-frame part-of (:is-a relation :propagate nil)
   :combination-type :FIRST
   :slots-inherited (:value '((location :first) (made-from :append)))
   :has-inverses T
@@ -64,9 +64,9 @@
 
 (defun change-my-output ()
   (format T "Entered change-my-output ok~%")
-  (set-value pa:frame :output newval))
+  (set-value frame :output newval))
 
-(def-frame sub-part-of (is-a (pa:relation))
+(def-frame sub-part-of (is-a (relation))
   :has-inverses T
   :inverse-name super-part-of)
 
@@ -197,7 +197,7 @@
 (test-case (get-immediate-value 'leg2a :made-from) (bark mehogany))
 (test-case (get-slot-names 'leg1) (:%class :location :made-from :weight))
 (test-case (get-value 'leg2a :made-from) (bark mehogany))
-(test-case (get-value-demons 'leg2a :made-from) (bark mehogany))
+(test-case (get-value-demons (frame 'leg2a) :made-from) (bark mehogany))
 (test-case (immediate-isas 'person) (living-thing))
 (test-case (instance-names-of 'person) (p1))
 (test-case (inverse-isas 'person) (baby child))
@@ -242,8 +242,8 @@
 (test-case (pp-frame 'door) NIL)
 (define-facet-getter door :size-slot :depth)
 (define-facet-setter door :size-slot :depth)
-(set-door-size-slot.depth (frame 'door) 1)
-(test-case (door-size-slot.depth (frame 'door)) 1)
+(test-case (set-door-size-slot.depth (frame 'door) 1) 1)
+(test-case (door-size-slot.depth (frame 'door)) 0)
 (test-case (define-facet-accessors door :size-slot :depth) door-size-slot.depth)
 
 (test-all)

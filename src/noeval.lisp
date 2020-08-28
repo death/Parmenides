@@ -2,7 +2,7 @@
 ;;;;  Load this AFTER loading Parmenides if you want def-frame to not eval
 ;;;;  the contents of facts in instance slots.
 
-(in-package "PARMENIDES")
+(in-package :parmenides)
 
 
 (defun eval-plist (plist)
