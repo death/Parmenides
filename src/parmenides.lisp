@@ -117,68 +117,56 @@
 
 (in-package :parmenides)
 
-;;; Symbols documented in the user's manual:
-;;; These names are kept in the list *PA-EXPORTS* so that FRulekit,
-;;; which is in a different package, can export PA symbols too.  That way,
-;;; when users load FRulekit, they automatically get the PA functions.
-
-;;; Functions exported to FRulekit but not documented in user's manual (not
-;;; fully supported):
-
-
 ;;;; -------------------------------------------------------------------- ;;;
 ;;;; MULTI-LINGUA MODULE, STARTED BY Daniel Borrajo
 ;;;;
 
-;;; This module defines the macros and variables needed to configure the
-;;; multilingual capability of Parmenides (and FRulekit).
-
+;;; This module defines the operators and variables needed to
+;;; configure the multilingual capability of Parmenides.
 
 ;;;
-;;; IMPORTANT: In order to configure your site, set the value of *LANGUAGE*
-;;; and *PA-PATHNAME* variables.
+;;; IMPORTANT: In order to select a language, use SET-LANGUAGE.
+;;; English is the default language.
 ;;;
 
-;;; *LANGUAGE* can be "eng" (english), "esp" (espagnol), "deu" (deutsch),
-;;; "fra" (francais), "por" (portugues), "ita" (italiano), ....
-;;; Files with the appropriate extension containing PA or FRulekit messages
-;;; must be in the PA and FRulekit directories, respectively. For example,
-;;; the file "pa-messages.eng" must be in the PA directory to load
-;;; Parmenides if the selected language is English.
-(defvar *LANGUAGE* "eng")
+;;; *LANGUAGE* can be :eng (english), :esp (espagnol), :deu (deutsch),
+;;; :fra (francais), :por (portugues), :ita (italiano), ....
+;;;
+;;; PUT-MESSAGES can be used to define messages for a given language.
+(defvar *language* :eng)
 
-;;; The name of the directory where the Parmenides files reside.
-(defvar *PA-PATHNAME* "../")
+(defvar *language-table*
+  (make-hash-table))
 
-;;; The hash table containing the messages
-(defparameter *MESSAGES* (make-hash-table :size 409))
+(defun get-messages (&optional (language *language*))
+  (or (gethash language *language-table*)
+      (setf (gethash language *language-table*)
+            (make-hash-table))))
 
-;;; Reads the contents of *MESSAGES* from file
-(defun load-messages (filename)
-  (with-open-file (stream filename :direction :input)
-    (do ((msgname (read stream)
-                  (read stream nil :eof))
-         (message (read stream)
-                  (read stream nil :eof)))
-        ((or (eq msgname :eof) (eq message :eof)))
-      (put-message msgname message))))
+;;; The hash table containing the messages.
+(defvar *messages*
+  (get-messages))
+
+(defun set-language (&optional (language *language*))
+  (setf *language* language)
+  (setf *messages* (get-messages))
+  language)
 
 ;;; Functions to access a message and to add a message to *MESSAGES*
-(defmacro get-message (msgname)
-  `(gethash ,msgname  *MESSAGES*))
+(defun get-message (msgname)
+  (or (gethash msgname *messages*)
+      (gethash msgname (get-messages :eng))
+      (format nil "~S" msgname)))
 
 (defun put-message (msgname message)
-  (setf (gethash msgname *MESSAGES*) message))
+  (setf (gethash msgname *messages*) message))
 
-(defun define-language (language)
-  (setq *LANGUAGE* language)
-  (load-messages (format NIL "~Apa-messages.~A" *PA-PATHNAME* language)))
-
-(defun load-parmenides (&optional (language *LANGUAGE*))
-  (define-language language)
-  (load (format NIL "~Aparmenides" *PA-PATHNAME*)))
-
-(define-language *LANGUAGE*)
+(defun put-messages (language &rest plist)
+  (let ((*messages* (get-messages language)))
+    (do ((msgname (pop plist) (pop plist))
+         (message (pop plist) (pop plist)))
+        ((or (null msgname) (null message)))
+      (put-message msgname message))))
 
 ;;;; -------------------------------------------------------------------- ;;;
 ;;;; SPECIAL VARIABLES AND MACROS
@@ -2926,19 +2914,19 @@
 
 (defun init-parmenides ()
   (setq *AREF-SLOT-FN-PLIST* NIL)
-  (format T "Parmenides 1.5, Copyright (c) 1985, 1988 Carnegie Mellon.~%"))
+  (format T "~&Parmenides 1.5, Copyright (c) 1985, 1988 Carnegie Mellon.~%"))
 
 (init-parmenides)
 
 ;;; Has-inverses and inverse-name slots added 4-1-87 to support inverse
 ;;; relations.
 (eval-when (:load-toplevel :execute)
-  (def-frame* 'relation ()
-    '(:combination-type :FIRST
-      :slots-inherited (value :*ALL*)
-      :has-inverses NIL ;; Indicates if the relation has inverses.
-      :inverse-name NIL))
-  )
+  (let ((*parmenides-terse* t))
+    (def-frame* 'relation ()
+      '(:combination-type :FIRST
+        :slots-inherited (value :*ALL*)
+        :has-inverses NIL ;; Indicates if the relation has inverses.
+        :inverse-name NIL))))
 
 ;;;  (Def-frame inverse-relation (:is-a (relation)))
 
