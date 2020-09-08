@@ -261,4 +261,4 @@
 (test-case (door-size-slot.depth (frame 'door)) 0)
 (test-case (define-facet-accessors door :size-slot :depth) door-size-slot.depth)
 
-(test-all)
+;;(test-all)
