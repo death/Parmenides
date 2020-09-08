@@ -3,6 +3,12 @@
 
 (use-package :parmenides)
 
+(defparameter p1 ())
+(defparameter b1 ())
+(defparameter child1 ())
+(defparameter leg2 ())
+(defparameter leg3 ())
+
 (format T "Testing Parmenides.~%~%")
 
 (def-frame living-thing (propagate t)
@@ -24,6 +30,7 @@
 
 (def-frame baby (is-a (person diversion))
   :cries (value 'sometimes))
+
 (setq b1 (make-baby 'baby1 :cries '(value always)))
 ;;; User relation testing
 
@@ -61,6 +68,14 @@
   :status nil
   :input (:value '(input n) :pre-if-set '(change-my-output))
   :output (:value T :post-if-set '(change-successor-output)))
+;;;it appears that :post-if-set and :pre-if-set are functions that need to be called if those
+;;;flags are set, however in def-frame they have used (eval ..) on the corresponding list, in this case
+;;;(change-my-output) and (change-successor-output) however it was assuming dynamic extent for 4
+;;;variables bound in a let, so I had to declare them all dynamic so that (change-my-output) was
+;;;able to modify them see L819 in parmenides.lisp. I think it would be better to change from a list
+;;;to a function so (:value T :post-if-set #'change-my-output ) where change-my-output is a function
+;;;that takes 4 variables 'framename frame slotname and facetname' so that eval and declaring
+;;;dynamic extent doesn't have to be used
 
 (defun change-my-output ()
   (format T "Entered change-my-output ok~%")
