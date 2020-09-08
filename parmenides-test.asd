@@ -1,8 +1,9 @@
 (asdf:defsystem #:parmenides-test
   :description "Tests for Parmenides"
   :license "MIT"
-  :depends-on (#:parachute)
   :perform (asdf:test-op (op c) (uiop:symbol-call :parmenides-test :test-all))
-  :pathname "src/"
+  :pathname "tests/"
+  :depends-on (#:parmenides)
   :components
-  ((:file "prtest")))
+  ((:file "package")
+   (:file "prtest")))

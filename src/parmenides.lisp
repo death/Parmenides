@@ -809,6 +809,11 @@
                                (1+ depth) demonsp))
            newval))))
 
+(defun funcall-when-list (fun &rest args)
+  (if (listp fun)
+      (apply #'funcall (first fun) args)
+      (apply #'funcall fun args)))
+
 ;;; Instances have the property that all of their slot nums and facet nums are
 ;;; the same as their class, since they are an instance of only one class.
 ;;; Algorithm:

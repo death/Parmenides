@@ -10,6 +10,10 @@ Copyright (C) 1990  Carnegie Mellon University
 community. Changes are made to it that may be backwards incompatible.
 At some point a decision may be made to call this Version 2.0.
 
+# To-fix notes 
+* set-class&instances-facet uses eval, should change to funcall
+* need to create a package for testing
+
 # Introduction
 
 **PARMENIDES** (PropagAting, Rulekit-Motivated ENgine for Instance
