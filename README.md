@@ -1,18 +1,38 @@
 # PARMENIDES: A Class-Based Frame System
 
-Version 1.5 (with changes; see read on)
+Version 1.5 (with changes; see commit history)
 
 Original authors: Peter Shell, Jaime Carbonell
 
 Copyright (C) 1990  Carnegie Mellon University
 
-**Note**: this project is being resurrected by members of the Lisp
+# To Do
+
+**Note**: This project is being resurrected by members of the Lisp
 community. Changes are made to it that may be backwards incompatible.
 At some point a decision may be made to call this Version 2.0.
 
-# To-fix notes 
-* set-class&instances-facet uses eval, should change to funcall
-* need to create a package for testing
+- set-class&instances-facet uses eval, should change to funcall
+
+- more extensive testing
+
+- eliminate side effects in macros
+
+- split frame definition code so that the right forms evaluate at the
+  right times, and only at those times
+
+- make sure tests are independent of one another and can be run more
+  than just once
+
+- document new multi-language support interface
+
+- fix formatting in this document
+
+- add benchmark code instead of the timing section in this document
+
+- add some examples
+
+- stuff in Future Enhancements section
 
 # Introduction
 
