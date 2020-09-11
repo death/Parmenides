@@ -2,7 +2,7 @@
   :description "Tests for Parmenides"
   :license "MIT"
   :perform (asdf:test-op (op c) (uiop:symbol-call :parmenides-test :test-all))
-  :pathname "tests/"
+  :pathname "tests/pa/"
   :depends-on (#:parmenides)
   :components
   ((:file "package")

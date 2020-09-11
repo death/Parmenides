@@ -4,7 +4,7 @@
   :license  ""
   :version "0.0.1"
   :serial t
-  :pathname "src/"
+  :pathname "src/pa/"
   :components ((:file "package")
                (:file "parmenides")
                (:file "pa-messages-eng")
