@@ -172,10 +172,9 @@
 ;;;; SPECIAL VARIABLES AND MACROS
 ;;;;
 
-;;; Proclaim the following symbols as dynamically scoped so the demons
+;;; Declaim the following symbols as dynamically scoped so the demons
 ;;; can get the bindings when they fire...
-(proclaim '(special
-            framename slotname facetname frame snum facetnum newval oldval))
+(declaim (special framename slotname facetname frame snum facetnum newval oldval))
 
 (defvar *PARMENIDES-TERSE* NIL) ;;If true, then suppress Parmenides messages.
 
@@ -446,7 +445,7 @@
 
 ;;; (aref *AREF-FN-MAP* N) returns the function object which is the aref
 ;;; accessor for the Nth slot.
-(eval-when (eval compile load)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *AREF-FN-MAP*
     (make-array 16
                 :initial-contents *AREF-FN-NAMES*))
@@ -834,7 +833,6 @@
                 (framename framename)
                 (slotname sname)
                 (facetname fname))
-            (declare (special frame framename slotname facetname))
             (eval demon)))
       (if (not (eq demonsp :slots-only))
           (let ((cdemon (get-cslot frame :pre-if-set)))
@@ -843,7 +841,6 @@
                       (frame frame)
                       (slotname sname)
                       (facetname fname))
-                  (declare (special frame framename slotname facetname))
                   (eval cdemon))))))
     (if dfnum (setf (aref (aref frame snum) dfnum) depth))
     (setf (aref (aref frame snum) fnum) newval)
@@ -854,7 +851,6 @@
                 (framename framename)
                 (slotname sname)
                 (facetname fname))
-            (declare (special frame framename slotname facetname))
             (eval demon)))
       (if (not (eq demonsp :slots-only))
           (let ((cdemon (get-cslot frame :post-if-set)))
@@ -863,7 +859,6 @@
                       (frame frame)
                       (slotname sname)
                       (facetname fname))
-                  (declare (special frame framename slotname facetname))
                   (eval cdemon))))))
     (if (and (classp frame) propagatep)
         (let ((depth (1+ depth)))          ;;instances are 1 away from the class.
@@ -889,7 +884,8 @@
                                     fname)))))))
 
 (defun set-inverse-facet (frame val sname invname fname)
-  (if (not (symbolp val)) (setq frame (assure-frame frame)))
+  (if (not (symbolp val))
+      (setq frame (assure-frame frame)))
   (if (not (framep val))
       (if (or (not (symbolp val))
               (and (not (get val :classp))
@@ -1354,10 +1350,8 @@
         (dolist (slot slots)
           (define-facet-getter-for-slot
               class-prefix index-plist (assure-keyword slot) facets fn-type)))
-    (if (atom (car *accessor-fns*))
-        *accessor-fns*
-        (cons 'progn *accessor-fns*))))
-
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       ,@*accessor-fns*)))
 
 (defun define-facet-getter-for-slot (class-prefix index-plist slot facets fn-type)
   (let ((slot-prefix (smash class-prefix slot))
@@ -1487,7 +1481,7 @@
         (putprop name :COMPILE-TIME :classp)) ; Is a class at compile time too!
     (maybe-define-inverse-relation-class name relation-p full-iplist
                                          full-cplist)
-    `(progn
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
        (announce-define ',name)
        (setf (get ',name :instances) NIL)
        (putprop ',name (make-pa-frame
@@ -1715,7 +1709,7 @@
 (defun slotp (class slotname)
   (not (null (memq (assure-keyword slotname) (get-slot-names class)))))
 
-(defmacro do-facets ((facet-name facet-val slot frame) &rest form)
+(defmacro do-facets ((facet-name facet-val slot frame) &body forms)
   (let ((do-var (gentemp "DO-VAR"))
         (real-frame-var (gentemp "REAL-FRAME"))
         (frame-type-var (gentemp "FRAME-TYPE"))
@@ -1736,7 +1730,7 @@
                      (,facet-val (aref ,slot-var (cadr ,do-var))
                                  (if ,do-var (aref ,slot-var (cadr ,do-var)))))
                     ((null ,do-var) T)
-                 ,@form)))))))
+                 ,@forms)))))))
 
 ;;; The name of the class is always kept in the 0th position by Parmenides.
 (defun frame-class (frame)
@@ -2188,8 +2182,9 @@
 
 (defun ia-facetplist-append (pl1 l1)
   (cond (pl1
-         (nconc (cadr pl1) l1)
-         pl1)
+         (list* (first pl1)
+                (append (cadr pl1) l1)
+                (cddr pl1)))
         (T (list :value l1))))
 
 ;;; If one propagates (prop1 or prop2) and the other doesn't, then
@@ -2693,7 +2688,13 @@
    (or (and (not (eq slotsin :*ALL*))
             (cadar (member-if #'(lambda (sentry)
                                   (and (consp sentry)
-                                       (eq (car sentry) sname)
+                                       (eq
+                                        ;; FIXME: This should likely
+                                        ;; be (assure-keyword (car
+                                        ;; sentry)) but needs a
+                                        ;; failing test case first.
+                                        (car sentry)
+                                        sname)
                                        (cadr sentry)))
                               slotsin)))
        default)))

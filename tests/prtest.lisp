@@ -1,15 +1,7 @@
 ;;; This file contains code which tests Parmenides.  It attempts to every
 ;;; user-level function, and tests most of its functionality.
 
-(use-package :parmenides-test)
-
-(defparameter p1 ())
-(defparameter b1 ())
-(defparameter child1 ())
-(defparameter leg2 ())
-(defparameter leg3 ())
-
-(format T "Testing Parmenides.~%~%")
+(in-package :parmenides-test)
 
 (def-frame living-thing (propagate t)
   :breathes (value 'yes)
@@ -18,12 +10,16 @@
 (def-frame person (is-a (living-thing) propagate t)
   :legs (value 2)
   :talks (value 'yes))
-(setq p1 (make-person 'p1 :talks '(value no)))
+
+(defvar *p1*
+  (make-person 'p1 :talks '(value no)))
 
 (def-frame child (is-a (person) propagate t)
   :talks (value 'no)
   :works (value 'no))
-(setq child1 (make-child 'child1 :talks '(value yes)))
+
+(defvar *child1*
+  (make-child 'child1 :talks '(value yes)))
 
 (def-frame diversion ()
   :fun (value 'usually))
@@ -31,7 +27,9 @@
 (def-frame baby (is-a (person diversion))
   :cries (value 'sometimes))
 
-(setq b1 (make-baby 'baby1 :cries '(value always)))
+(defvar *b1*
+  (make-baby 'baby1 :cries '(value always)))
+
 ;;; User relation testing
 
 (def-frame part2 (is-a (relation))
@@ -57,30 +55,36 @@
 (def-frame leg2 (part-of table)
   :part-of table)
 
+(def-frame leg5 (part-of table)
+  :a b)
 
-(def-frame leg5 (part-of table) :a b)
-(setq leg2 (make-leg2 'leg2a :location '(value wall)
-                      :made-from '(value (bark))))
-(setq leg3 (make-leg2 'leg3a :part-of 'table
-                      :made-from '(value (bark))))
+(defvar *leg2*
+  (make-leg2 'leg2a :location '(value wall)
+                    :made-from '(value (bark))))
+
+(defvar *leg3*
+  (make-leg2 'leg3a :part-of 'table
+                    :made-from '(value (bark))))
 
 (def-frame input (propagate t)
   :under nil
   :status nil
   :input (:value '(input n) :pre-if-set '(change-my-output))
   :output (:value T :post-if-set '(change-successor-output)))
-;;;it appears that :post-if-set and :pre-if-set are functions that need to be called if those
-;;;flags are set, however in def-frame they have used (eval ..) on the corresponding list, in this case
-;;;(change-my-output) and (change-successor-output) however it was assuming dynamic extent for 4
-;;;variables bound in a let, so I had to declare them all dynamic so that (change-my-output) was
-;;;able to modify them see L819 in parmenides.lisp. I think it would be better to change from a list
-;;;to a function so (:value T :post-if-set #'change-my-output ) where change-my-output is a function
-;;;that takes 4 variables 'framename frame slotname and facetname' so that eval and declaring
-;;;dynamic extent doesn't have to be used
+
+;;; It would be better to take a function, e.g. (:value T :post-if-set
+;;; #'change-my-output), where change-my-output is a function that
+;;; takes 4 variables 'framename frame slotname and facetname' so that
+;;; eval and declaring specialness doesn't have to be used.
 
 (defun change-my-output ()
   (format T "Entered change-my-output ok~%")
-  (set-value frame :output newval))
+  (set-value-demons frame :output newval))
+
+(defun change-successor-output ()
+  (format t "~&Change-successor-output called~%"))
+
+(set-facet-demons 'input :input :value 'r)
 
 (def-frame sub-part-of (is-a (relation))
   :has-inverses T
@@ -115,27 +119,28 @@
 (defmacro test-cases (fname cases)
   `(setf (getf ',fname :testlist) ',cases))
 
-;;;It is assumed that the name of function, fname, has a :testlist property
-;;;of dotted pairs of (data . expected-result).
+;;; It is assumed that the name of function, fname, has a :testlist
+;;; property of dotted pairs of (data . expected-result).
 (defun test (fname)
   (dolist (testcase (get fname :testlist))
     (format T "Testing ~A on ~A..." fname (car testcase))
-    (let ((res (eval `(,fname ,@(car testcase)))))
+    (let* ((*package* (find-package "PARMENIDES-TEST"))
+           (res (eval `(,fname ,@(car testcase)))))
       (cond ((not (equal res (cdr testcase)))
              (cerror "Try next test case~%"
-                     "~%oops, ~A returned ~A instead of expected ~A~%"
+                     "~%oops, ~A returned ~S instead of expected ~S~%"
                      fname res (cdr testcase)))
-            (T (format T "~A, correct.~%" res))))))
+            (T (format T "~S, correct.~%" res))))))
 
 ;;; Top-level testing function.
 (defun test-all ()
+  (format t "~&Testing Parmenides.~%~%")
   (dolist (fname *FUNCTIONS-TO-TEST*)
     (test fname)))
 
 (defun clear-tests ()
   (dolist (fname *FUNCTIONS-TO-TEST*)
     (remprop fname :testlist)))
-
 
 ;;; The testing code below used to be in testpa.lisp but has been merged
 ;;; into this file.
@@ -158,9 +163,8 @@
   :width 4)
 
 (make-truck 'truck1 :color 'red :weight 200)
+
 (make-door 'door1 :is-part-of 'truck1 :width 5 :height 5)
-;;seems to be a problem where this isn't grabbing the properties of 'truck1
-(set-facet-demons 'input :input :value 'r)
 
 (test-case (get-value 'leg2a 'made-from) (bark mehogany))
 (test-case (get-value 'leg2a 'location) wall)
@@ -189,8 +193,6 @@
 (add-slot 'door :size-slot '(value 'big-slot))
 (add-to-facet 'door :size-slot :value 'bigger)
 (add-to-value 'door :size-slot 'biggest)
-(add-slot 'door :weight 5)
-;;;added the slot :weight to door because they were adding to a slot that doesn't exist
 (add-to-slot 'door :weight 10)
 
 (test-case (get-cslot 'door :size) big)
@@ -209,7 +211,7 @@
 (test-case (frame-instance-p 'door1) T)
 (test-case (frame-instance-p 'door) NIL)
 (test-case (frame-instance-p 'door100) NIL)
-(test-case (get-generic-value leg2 :location) wall)
+(test-case (get-generic-value *leg2* :location) wall)
 (test-case (get-generic-value 'part-of :inverse-name) contains)
 (test-case (get-immediate-facet 'leg2a :made-from :value) (bark mehogany))
 (test-case (get-immediate-slot 'leg1 :location) wall)
@@ -220,8 +222,8 @@
 (test-case (immediate-isas 'person) (living-thing))
 (test-case (instance-names-of 'person) (p1))
 (test-case (inverse-isas 'person) (baby child))
-(test-case (isa-instance leg3 'leg2) T)
-(test-case (isa-instance leg3 'fooo) NIL)
+(test-case (isa-instance *leg3* 'leg2) T)
+(test-case (isa-instance *leg3* 'fooo) NIL)
 (test-case (isa-p 'person 'living-thing) (living-thing))
 (test-case (isa-p 'person 'nothing) NIL)
 (test-case (isas 'baby) (person diversion living-thing))
@@ -253,7 +255,7 @@
 
 (defparameter *size-slot-values* NIL)
 (do-facets (name val :size-slot 'd4)
-           (push val *size-slot-values*))
+  (push val *size-slot-values*))
 (test-case (equal *size-slot-values* '(0 green)) T)
 (test-case (isa-or-instance 'person 'living-thing) (living-thing))
 (test-case (isa-or-instance (frame 'person) 'living-thing) (living-thing))
@@ -261,8 +263,8 @@
 (test-case (pp-frame 'door) NIL)
 (define-facet-getter door :size-slot :depth)
 (define-facet-setter door :size-slot :depth)
+;; The two next tests depend on the (reverse) test order, and assume
+;; that tests are run only once.
 (test-case (set-door-size-slot.depth (frame 'door) 1) 1)
 (test-case (door-size-slot.depth (frame 'door)) 0)
 (test-case (define-facet-accessors door :size-slot :depth) door-size-slot.depth)
-
-;;(test-all)

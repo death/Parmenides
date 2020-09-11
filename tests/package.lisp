@@ -1,4 +1,3 @@
 (defpackage :parmenides-test
-  (:use :parmenides)
-  (:nicknames :pa-t)
+  (:use #:cl #:parmenides)
   (:export #:test-all))
