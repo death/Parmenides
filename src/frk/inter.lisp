@@ -14,54 +14,7 @@
 ;;;; PACKAGE STUFF                                                        ;;;
 ;;;;
 
-(in-package "FRULEKIT" :nicknames '("FRK") :use '("LISP" "PARMENIDES"))
-;;; NOTE: the nickname "FR" is purposely not used since it is used for Framekit
-
-
-;;; User-accessible functions, macros and variables documented in the user's
-;;; manual.
-;;; Symbols exported by optional modules AGENDA and TRACE are exported from
-;;; those modules, but symbols exports from module BUILD are exported from
-;;; here since build and inter must both be loaded to run, and it is more
-;;; natural to group all the symbols from build and inter in one place.
-(export '(
-     ;; FUNCTIONS & MACROS
-          Rule Rule* Build-rule Build-rule* Pp-rule Pp-instant Ith-wme
-          Pp-wme Pp-wmes Pp-ith-wme Pp-wm Save-wme Save-ith-wme Save-wm Wm
-          Set-wm Add-to-wm Def-cr-strategy Def-complex-cr-strategy
-          Pr-switches Re-init-trace $Disj $Disj-nums Start Literalize
-          $Make $Fast-make $Make-named $Remove $Remove-keep
-          $Modify $Modify-demons $Modify-in-place
-          Excise Add-frame Whynot Matches D-in-instants Halt Rbreak Cont Run
-          Back Init-rete Clear-net Compile-nodes Compile-rhses Compile-all
-          Inhibit-rules Uninhibit-rules $modify-num VAR <> End-rhs
-          Def-inverse-action Var-in-instant In-Wm-P
-
-     ;; FRAME AND STRUCTURE ACCESS
-          Rk-rule-lhs Rk-rule-rhs  Rk-rule-beliefs Rk-rule-pname
-          Rk-rule-extra-test Rk-rule-num-tests WME
-          Wme-%time Wme-%created Wme-%class
-          Token-contents Token-match-count Token-bindval
-          Instant-token Instant-prod Instant-sortedwmes
-
-     ;; GLOBAL VARIABLES
-          *CR-STRATEGY* *MEA* *LEX* *FULL-CR* narrow-down-mea narrow-down-lex
-          narrow-down-test-class num-tests num-checks narrow-down-wme-class
-          *RULE-NAMES* *RECORD-LEVEL* *MAX-BACK* *PAUSE-EVERY-CYCLE*
-          *CONFLICT-SET* *INSTANT* *TRACE-FIRE* *TRACE-MATCH*
-          *TRACE-UNMATCH* *TRACE-ADD* *TRACE-DELETE* *TRACE-CR*
-          *TRACE-CYCLE* *TRACE-MODIFY* *RULEKIT-TERSE* *REFRACT*
-          *FULL-WMEPRINT* *NUMBER-WMES* *AGENDA-LOADED* *CYCLE*
-          ))
-
-(export '(            ;; Programmer's symbols (not documented - some should be)
-          Rk-rule-pnode Rk-rule-left-access Rk-rule-inscount Rk-rule-break
-          reverse-improper rk-variablep wmep def-beta-var
-          *NON-DELETIONS* *AGENDA* *DONT-WARN-LISP-CHECKS* *NO-LITERALIZE*
-         ))
-
-#+Allegro (import 'excl::putprop)
-
+(in-package #:frulekit)
 
 ;;; Module for dynamically interpreting the FRulekit rete net made by
 ;;; build.lisp.  main functions:
@@ -73,15 +26,15 @@
 ;;; (4) ($modify <wme>).  see frulekit.PS.
 ;;; Note: build and Parmenides must be loaded before running or compiling this.
 
-(eval-when (compile)
+(eval-when (:compile-toplevel)
   (if (equal (lisp-implementation-type) "Kyoto Common Lisp on MV")
       (load "/usr/pshell/frulekit/build.o")))
 
 #+LUCID (proclaim '(special lucid::*debugger-bindings*))
 #+LUCID (pushnew '(*readtable*) lucid::*debugger-bindings*)
 
-(proclaim '(type list *PRINTED-NODES* *CONFLICT-SET* *SWITCHES*
-                      *ADDED-INSTANTS* *REMOVED-INSTANTS* *FIRED-INSTANTS*))
+(declaim (type list *PRINTED-NODES* *CONFLICT-SET* *SWITCHES*
+               *ADDED-INSTANTS* *REMOVED-INSTANTS* *FIRED-INSTANTS*))
 
 (defvar *INSTANT*)          ;;current instantiation chosen from *CONFLICT-SET*
 (defvar *MEA* '(narrow-down-mea narrow-down-lex num-tests num-checks))
@@ -120,7 +73,6 @@
   (make-hash-table :size 43))   ;;Hash table for var bindings.
 (defvar *PRINTING-WME* NIL)     ;;Flag for wme printer.
 (defvar *PRINTED-NODES*)
-(defvar mystream)
 (defvar *BACKING-UP* NIL)       ;;T while FRulekit is backing up.
 (defvar *NUMBER-WMES* NIL)
 (defvar *AGENDA-LOADED* NIL)    ;;T only when the agenda module is loaded.
@@ -133,12 +85,12 @@
                                 ;; for classes (def-frame instead), so we
                                 ;; can't do c-r.
 
-(proclaim '(special *PROD-MATCHES* *PROD-UNMATCHES* *TOKEN-POSITIVE* *AGENDA*))
+(declaim (special *PROD-MATCHES* *PROD-UNMATCHES* *TOKEN-POSITIVE* *AGENDA*))
 
 ;;; trace package data structures.
-(proclaim '(simple-vector
-            *PROD-MATCHES* *PROD-UNMATCHES* *PROD-FIRINGS* *ADDITIONS*
-            *DELETIONS* *MODIFIES* *REFRACTIONS* *NON-DELETIONS*))
+(declaim (simple-vector
+          *PROD-MATCHES* *PROD-UNMATCHES* *PROD-FIRINGS* *ADDITIONS*
+          *DELETIONS* *MODIFIES* *REFRACTIONS* *NON-DELETIONS*))
 
 (defvar *PROD-FIRINGS* (make-array *MAX-BACK* :initial-element NIL))
 (defvar *ADDITIONS* (make-array *MAX-BACK* :initial-element NIL))
@@ -178,7 +130,7 @@
 
 
 ;;;; Structures and Frames
-(eval-when (compile load eval)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (token (:type vector))
     contents                            ;; pointer to wme(s) that define it
     (match-count 0 :type integer)  ;; # of right tokens it matches, for negations
@@ -217,7 +169,7 @@
 ;;; FRulekit working memory elements are frames.  To define a class which
 ;;; is-a wme, use literalize.  FRulekit doesn't propagate its classes by
 ;;; default since it's inefficient.
-(eval-when (compile)
+(eval-when (:compile-toplevel)
  (def-frame wme (setable :setf propagate NIL pre-if-set (pre-modify)
                           post-if-set (post-modify) cache :*ALL*)
   %time 0         ;; time tag, saying when it was created
@@ -230,7 +182,7 @@
 
 ;;; Usually only these 2 slots are needed in a WME.  The WME is re-defined
 ;;; in trace.lisp to include the other 4 slots.
-(eval-when (load eval)
+(eval-when (:load-toplevel :execute)
   (def-frame wme (setable :setf propagate NIL pre-if-set (pre-modify)
                            post-if-set (post-modify) cache :*ALL*)
    %time 0                ;; time tag, saying when it was created
@@ -240,7 +192,7 @@
 
 ;;;; Macros
 ;;; Returns T iff token is "positive" [its tag indicates it should be added].
-(eval-when (compile load eval)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro beta-test-p (left-mem right-mem node)
     `(funcall (rete-node-function ,node)
               ,left-mem
@@ -287,10 +239,7 @@
 
 ;;; A little faster than beta-test-p
 (defun new-beta-test-p (left-mem right-mem test)
-  (declare (optimize (speed 3) (safety 0)))
-  (funcall test
-     left-mem
-     right-mem))
+  (funcall test left-mem right-mem))
 
 (defmacro queue-added-instant (instant)
   `(pushnew ,instant *ADDED-INSTANTS*
@@ -467,7 +416,7 @@
 
 ;;; Macros
 
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
 
 ;;
 ;; Sometimes it is useful to return the wme instead of T or NIL
@@ -515,7 +464,7 @@
     (do ((slots slots (cddr slots))
          (res NIL
               (push
-               `(setf (,(smash class "-" (car slots)) ,frame-name) ,(cadr slots))
+               `(setf (,(parmenides::smash class "-" (car slots)) ,frame-name) ,(cadr slots))
                res)))
         ((null slots) res))))
 
@@ -527,9 +476,9 @@
 (defun $modify-in-place (old-wme &rest newslots)
   (when *TIME-FRULEKIT*
     (setq *START-MODIFY* (get-internal-run-time)))
-  (setq old-wme (assure-frame old-wme))
-  (let ((copy-of (fast-copy-frame old-wme)))
-    (modify-frame old-wme newslots)
+  (setq old-wme (parmenides::assure-frame old-wme))
+  (let ((copy-of (parmenides::fast-copy-frame old-wme)))
+    (parmenides::modify-frame old-wme newslots)
     (when (> *RECORD-LEVEL* 0)
       (push (cons old-wme copy-of) (svref *MODIFIES* *MODCYCLE*)))
     (let ((*PERFORMING-BLOCKING* :no-unblocking))
@@ -673,11 +622,11 @@
 ;;; Literalize now has the same syntax, and almost the same semantics, as
 ;;; Def-frame.  Example: (literalize goal () :parent NO :action run)
 (defmacro literalize (classname cplist &rest plist)
-  (cond ((correct-common-p classname)
-         (ml-cerror :ignore-literalize :reserved-clisp-type classname)
-         NIL)
+  (cond ;; ((correct-common-p classname)
+        ;;  (ml-cerror :ignore-literalize :reserved-clisp-type classname)
+        ;;  NIL)
         (T
-         (keywordize-cplist cplist)
+         (parmenides::keywordize-cplist cplist)
          (let ((isas (getf cplist :is-a)))
            (if (listp isas)
                (if (not (some #'(lambda (parent) (isa-p parent 'wme)) isas))
@@ -693,7 +642,7 @@
 (defun make-wmesnames (classname)
   (let ((snames
          (remove-trace-snames (get-slot-names classname))))
-    (putprop classname snames :wmesnames)))
+    (parmenides::putprop classname snames :wmesnames)))
 
 ;;; Remove the slot names that the trace package uses from the given list.
 ;;; This is done so that a list of the printable slots is associated with the
@@ -712,15 +661,7 @@
             *TOP-LEVEL-INSTANT*)))
 
 (defun halt ()
-  (cond ((kyoto-lisp-p)
-         (rk-format T :halt-r))
-        ((cmu-common-lisp-p)
-         (rk-format T :halt-go))
-        ((dec-lisp-p)
-         (rk-format T :halt-cont))
-        ((xerox-p)
-         (rk-format T :halt-ok))
-        (T (rk-format T :halting)))
+  (rk-format T :halting)
   (break))
 
 ;;; Added 27-Mar.  Allows breakpointing of rules.  Possible values for
@@ -783,7 +724,7 @@
 (defun add-frame (frame)
   (when *TIME-FRULEKIT*
     (setq *START-MODIFY* (get-internal-run-time)))
-  (let ((new-wme ($add (assure-frame frame))))
+  (let ((new-wme ($add (parmenides::assure-frame frame))))
     (when *TIME-FRULEKIT*
       (incf *TOTAL-TIME* (- (get-internal-run-time) *START-MODIFY*)))
     new-wme))
@@ -855,7 +796,7 @@
 ;;; General conflict-resolution-strategy definer.
 ;;; Extractor: should return a value given an instantiation.
 ;;; Comparer: given two values, return T iff the first one is preferred.
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro def-cr-strategy (fname extractor comparer)
     `(defun ,fname (cs)
        (do* ((cands cs (cdr cands))
@@ -873,40 +814,42 @@
 
 ;;; ces must always correspond one-to-one with cs!
   (defmacro def-ce-cr-strategy (fname extractor comparer)
-    `(defun ,fname (cs ces)
-       (do* ((cands cs (cdr cands))
-             (ces ces (cdr ces))
-             (value (and (car ces) (,extractor (caar ces)))
-                    (and (car ces) (,extractor (caar ces))))
-             (highest value highest)
-             (winning-ces (list (car ces)) winning-ces)
-             (winners (list (car cands))
-                      (cond ((null value) winners)
-                            ((or (null highest) (,comparer value highest))
-                             (setf highest value)
-                             (setf winning-ces (list (car ces)))
-                             (list (car cands)))
-                            ((eq value highest)
-                             (push (car ces) winning-ces)
-                             (cons (car cands) winners))
-                            (T winners))))
-            ((null (cdr cands))
-             (if (null highest) NIL
-                 (cons winners winning-ces))))))
+    `(unless (fboundp ',fname)
+       (defun ,fname (cs ces)
+         (do* ((cands cs (cdr cands))
+               (ces ces (cdr ces))
+               (value (and (car ces) (,extractor (caar ces)))
+                      (and (car ces) (,extractor (caar ces))))
+               (highest value highest)
+               (winning-ces (list (car ces)) winning-ces)
+               (winners (list (car cands))
+                        (cond ((null value) winners)
+                              ((or (null highest) (,comparer value highest))
+                               (setf highest value)
+                               (setf winning-ces (list (car ces)))
+                               (list (car cands)))
+                              ((eq value highest)
+                               (push (car ces) winning-ces)
+                               (cons (car cands) winners))
+                              (T winners))))
+              ((null (cdr cands))
+               (if (null highest) NIL
+                   (cons winners winning-ces)))))))
 
   (defmacro def-complex-cr-strategy (fname extractor comparer)
     (let ((fname2 (intern (concatenate 'string (symbol-name fname) "-WMES"))))
       `(progn
-        (def-ce-cr-strategy ,fname2 ,extractor ,comparer)
-        (defun ,fname (cs)
-          (do ((ces NIL (update-ces ces))
-               (old-candidates cs candidates)
-               (candidates (cons cs (mapcar #'instant-sortedwmes cs))
-                           (,fname2 candidates ces)))
-              ((null (car candidates)) old-candidates)
-            (setq ces (cdr candidates) candidates (car candidates))
-            (cond ((null (cdr candidates))        ;;if it's narrowed down to one
-                   (return candidates)))))))))            ;;then return that one
+         (def-ce-cr-strategy ,fname2 ,extractor ,comparer)
+         (unless (fboundp ',fname)
+           (defun ,fname (cs)
+             (do ((ces NIL (update-ces ces))
+                  (old-candidates cs candidates)
+                  (candidates (cons cs (mapcar #'instant-sortedwmes cs))
+                              (,fname2 candidates ces)))
+                 ((null (car candidates)) old-candidates)
+               (setq ces (cdr candidates) candidates (car candidates))
+               (cond ((null (cdr candidates)) ;;if it's narrowed down to one
+                      (return candidates))))))))))            ;;then return that one
 
 (defun update-ces (ces)
   (do ((ce ces (cdr ce)))
@@ -1150,7 +1093,7 @@
         (nnode (and wme (find-nnode wme))))
     (cond ((not wme)
            (ml-cerror :ignore-remove :non-variable))
-          ((not (memq 'wme (isas (frame-class wme))))
+          ((not (memq 'wme (isas (parmenides::frame-class wme))))
            (ml-cerror :ignore-remove :var-not-wme wme))
           (T
            (if (> *RECORD-LEVEL* 0)
@@ -1174,8 +1117,7 @@
            (cond ((null new-wme)
                   (if (= *RECORD-LEVEL* 0) (remove-frame wme)))   ;;PA function
                  ((not (eq new-wme :neither))
-                  (replace-frame wme new-wme)))         ;;Parmenides function
-))))
+                  (parmenides::replace-frame wme new-wme)))))))
 
 ;;; Removes those wmes indicated by the labels.
 ;;; example: ($remove =goal =parent), where =goal and =parent are bound
@@ -1208,12 +1150,12 @@
 ;;; For each cycle, (svref *MODIFIES* <cycle>) is a list of (wme . <modified>)
 ;;; where <modified> is the old wme.
 (defun store-old (wme newslots)
-  (push (cons wme (fast-copy-frame wme newslots)) (svref *MODIFIES* *MODCYCLE*)))
+  (push (cons wme (parmenides::fast-copy-frame wme newslots)) (svref *MODIFIES* *MODCYCLE*)))
 
 (defun $modify (wme &rest newslots)
   (when *TIME-FRULEKIT*
     (setq *START-MODIFY* (get-internal-run-time)))
-  (setq wme (assure-frame wme))
+  (setq wme (parmenides::assure-frame wme))
   (let* ((oldwme wme)
          (newwme oldwme))
     (case *RECORD-LEVEL*
@@ -1222,11 +1164,11 @@
 ;;       (setq newwme (fast-copy-frame oldwme))
 ;;       (push (cons oldwme newwme) (svref *MODIFIES* *MODCYCLE*))
       (2
-       (setq newwme (fast-copy-frame oldwme))
+       (setq newwme (parmenides::fast-copy-frame oldwme))
        (push (cons oldwme newwme) (svref *MODIFIES* *MODCYCLE*))))
     (let ((*PERFORMING-BLOCKING* :no-unblocking))
       ($remove-wme oldwme (if (> *RECORD-LEVEL* 0) newwme :neither)))
-    (modify-frame newwme newslots)      ;;Parm modify-frame changes desired slots
+    (parmenides::modify-frame newwme newslots)      ;;Parm modify-frame changes desired slots
 ;;    (when (not (eq newwme oldwme))
 ;;      (pop-rk-var wme)                  ;;For when  there are 2 modifies on
 ;;      (set-rk-var (cadr wme) newwme))   ;;the same label in a row.
@@ -1238,17 +1180,17 @@
 
 ;;; Exactly like $modify except calls demons.
 (defun $modify-demons (wme &rest newslots)
-  (setq wme (assure-frame wme))
+  (setq wme (parmenides::assure-frame wme))
   (let* ((oldwme wme)
          (newwme oldwme))
     (case *RECORD-LEVEL*
       (1
        (store-old oldwme newslots))
       (2
-       (setq newwme (fast-copy-frame oldwme))
+       (setq newwme (parmenides::fast-copy-frame oldwme))
        (push (cons oldwme newwme) (svref *MODIFIES* *MODCYCLE*))))
     ($remove-wme oldwme (if (> *RECORD-LEVEL* 0) newwme :neither))
-    (modify-frame-demons newwme newslots)       ;;Parmenides modify-frame-demons
+    (parmenides::modify-frame-demons newwme newslots)       ;;Parmenides modify-frame-demons
 ;;    (push newwme (get (frame-class newwme) :instances))        ;;sort of weird
     ($add newwme)))
 
@@ -1270,7 +1212,7 @@
              (newwme oldwme)
              otherwme)
         (when (> *RECORD-LEVEL* 0)
-          (setq otherwme (fast-copy-frame oldwme))
+          (setq otherwme (parmenides::fast-copy-frame oldwme))
           (push (cons oldwme otherwme) (svref *MODIFIES* *MODCYCLE*))
           (if (= *RECORD-LEVEL* 2) (setq newwme otherwme)))
         ($remove-wme oldwme (if (= *RECORD-LEVEL* 0) :neither newwme))
@@ -1302,7 +1244,7 @@
 (defmacro $smart-modify (wmevar &rest newslots)
   (let* ((oldwme (eval wmevar))
          (newwme (if (> *RECORD-LEVEL* 0)
-                     (fast-copy-frame oldwme)
+                     (parmenides::fast-copy-frame oldwme)
                      oldwme))
          (class (wme-%class oldwme))
          (tnode (gethash class *RETE-TEST-HASH*))
@@ -1311,7 +1253,7 @@
       (ml-format T :modifying-wme)
       (pp-wme oldwme)
       (ml-format T :new-slots newslots))
-    (modify-frame newwme newslots)
+    (parmenides::modify-frame newwme newslots)
     (dolist (alpha (rete-node-right-output tnode))
       (if (node-contains-a-slot alpha slots)
           (alpha-modify-node oldwme newwme alpha)))
@@ -1332,10 +1274,10 @@
 (defmacro $modify-num (wme &rest newslots)
   (let* ((oldwme (wme-num wme))
          (newwme (if (> *RECORD-LEVEL* 0)
-                     (fast-copy-frame oldwme)
+                     (parmenides::fast-copy-frame oldwme)
                      oldwme)))
     ($remove-wme oldwme newwme)
-    (modify-frame newwme newslots)
+    (parmenides::modify-frame newwme newslots)
     `($add ',newwme)))
 
 
@@ -2216,7 +2158,7 @@
 (defun get-undo-action (action)
   (get action :undo-action))
 
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro def-inverse-action (action inv-action)
     `(setf (get ',action :undo-action) ,inv-action)))
 
@@ -2352,7 +2294,6 @@
 ;;; return t, else return NIL.
 ;;; Alphas have only one token in the instant field, whereas betas may have many.
 (defun alpha-test-p (token node)
-  (declare (optimize (speed 3) (safety 0)))
   (cond ((eq (rete-node-function node) *ALPHA-TRUE-TEST*)
          T)
         (T (funcall (rete-node-function node) token))))
@@ -2491,12 +2432,9 @@
 (defun compile-left-accesses ()
   (dolist (rname *RULE-NAMES*)
     (dolist (left-access (rk-rule-left-access (get rname 'prod)))
-#+cltl1 (if (not (compiled-function-p (cdr left-access)))
-            (setf (cdr left-access) (compile NIL (cdr left-access))))
-#+cltl2 (if (not (compiled-function-p (cdr left-access)))
-            (setf (cdr left-access)
-                  (compile NIL (function-lambda-expression (cdr left-access))))
-    ))))
+      (if (not (compiled-function-p (cdr left-access)))
+          (setf (cdr left-access)
+                (compile NIL (function-lambda-expression (cdr left-access))))))))
 
 (defun compile-nodes ()
   (setq *NODES-TRAVERSED* NIL)
@@ -2629,7 +2567,7 @@
         ($remove-wme make NIL))
       (perform-blocking-and-unblocking))
     (dolist (modify modifies)
-      (dup-array (cdr modify) (car modify)))    ;; Courtesy of Parmenides
+      (parmenides::dup-array (cdr modify) (car modify)))
     (dolist (remove removes)
       ($add remove))))
 
@@ -2675,21 +2613,21 @@
       (let ((snames (get (wme-%class wme) :wmesnames)))
         (if (not snames)                ;;then it's not a FRulekit wme
             (princ wme stream)
-            (write-frame wme name snames '$make-named stream
-                         :savep T
-                         :all-slots-p all-slots)))))
+            (parmenides::write-frame wme name snames '$make-named stream
+                                     :savep T
+                                     :all-slots-p all-slots)))))
 
 (defun pp-wme (wme &optional (stream *standard-output*))
   (if (framep wme)
       (let ((name (if (symbolp wme) wme))
-            (wme (assure-frame wme)))
+            (wme (parmenides::assure-frame wme)))
         (setq *PRINTING-WME* T)
         (format stream "\[~S " (wme-%class wme))
         (if name (format stream "'~S " name))
         (when (wmep wme) (ml-format stream :time (floor (wme-%time wme))))
         (let ((wmenum 0))
-          (dolist (sname (or (get (frame-class wme) :wmesnames)
-                             (cdr (get-slot-names (frame-class wme)))))
+          (dolist (sname (or (get (parmenides::frame-class wme) :wmesnames)
+                             (cdr (get-slot-names (parmenides::frame-class wme)))))
             (incf wmenum)
             (when (> wmenum 3) (format stream "~%") (setq wmenum 0))
             (format stream " ~A:" sname)
@@ -2735,7 +2673,7 @@
                          (format stream " FRAME->~% ")
                          (pp-frame val :stream stream)))
                       (T (format stream "{FRAME ~S}"
-                                 (frame-class val)))))
+                                 (parmenides::frame-class val)))))
                (T (format stream "~S" (aref val 0)))))
         ((listp val)
          (pp-wme-val-list stream val))
@@ -2764,8 +2702,8 @@
 (defun ith-wme (ith &optional (class NIL) (stream *standard-output*))
   (deal-with-wm class ith :return stream))
 
-(defun deal-with-wm (class ith return stream)
-  (declare (special ith return stream))
+(defun deal-with-wm (class ith return1 stream1)
+  (declare (special ith return1 stream1))
   (let ((pos 1) res)
     (declare (special pos res))
     (cond (class
@@ -2792,16 +2730,16 @@
     (deal-with-wme (token-contents token))))
 
 (defun deal-with-wme (wme)
-  (declare (special ith pos return res stream))
+  (declare (special ith pos return1 res stream1))
   (cond (ith
          (if (= pos ith)
-             (if (eq return :return)
+             (if (eq return1 :return)
                  (setq res wme)
-                 (pp-num-wme wme pos stream return))))
+                 (pp-num-wme wme pos stream1 return1))))
         (T
-         (if (eq return :return)
+         (if (eq return1 :return)
              (push wme res)
-             (pp-num-wme wme pos stream return))))
+             (pp-num-wme wme pos stream1 return1))))
   (incf pos))
 
 (defun pp-num-wme (wme pos stream return)
@@ -2869,10 +2807,11 @@
         (shownode node stream))))
 
 (defun shownode (node stream)
-  (setf mystream stream)
-  (dotimes (i (* *PRINT-DEPTH* 4)) (princ ">" stream))
+  (dotimes (i (* *PRINT-DEPTH* 4))
+    (princ ">" stream))
   (ml-format stream :rete-node)
-  (dotimes (i (* *PRINT-DEPTH* 4)) (princ ">"))
+  (dotimes (i (* *PRINT-DEPTH* 4))
+    (princ ">"))
   (when (rete-node-pnode-prod node)
     (format stream " Pnodes:")
     (dolist (prod (rete-node-pnode-prod node))
@@ -2992,22 +2931,22 @@
 (defmacro matches (pname &rest args)
   `(matches0 ',pname ,@args))
 
-(defun matches0 (pname &key max (stream *STANDARD-OUTPUT*))
-  (declare (special stream))
+(defun matches0 (pname &key max (stream1 *STANDARD-OUTPUT*))
+  (declare (special stream1))
   (let ((nodes (get pname 'backpointers))
-        ith return res)
-    (declare (special ith return res))
+        ith return1 res)
+    (declare (special ith return1 res))
     (cond
      ((null nodes)
-      (ml-format stream :rule-not-compiled pname))
+      (ml-format stream1 :rule-not-compiled pname))
      ((null (cdr nodes))
-      (ml-format stream :conde-1 1)
+      (ml-format stream1 :conde-1 1)
       (deal-with-tokens (rete-node-output-mem (car nodes))))
      (T
-      (format stream "~%")
-      (print-left-nums 1 stream)
+      (format stream1 "~%")
+      (print-left-nums 1 stream1)
       (deal-with-tokens (get-tokens (rete-node-output-mem (car nodes))))
-      (print-matches (cdr nodes) 2 max stream)))))
+      (print-matches (cdr nodes) 2 max stream1)))))
 ;;      (print-left-nums (length nodes) stream)
 ;;    (deal-with-tokens (rete-node-output-mem (car (last nodes))))))))
 
@@ -3044,7 +2983,7 @@
   memory)
 
 (defun deal-with-tokens (tokens)
-  (declare (special stream))
+  (declare (special stream1))
   (let ((pos 1))
     (declare (special pos))
     (dolist (contents (shared-contents tokens))
@@ -3052,7 +2991,7 @@
           ((atom contents)
            (deal-with-wme contents) T)
         (deal-with-wme (car contents)))
-      (terpri stream))))
+      (terpri stream1))))
 
 (defun print-left-nums (ce stream)
   (cond ((= ce 1)
@@ -3086,12 +3025,12 @@
              (values NIL NIL))
             (T
              (values (nth (- (length wmes) condenum) wmes)
-                     (assure-current sname)))))))
+                     (parmenides::assure-current sname)))))))
 
 (defun rk-class-and-slot-of (varname instant)
   (multiple-value-bind (frame slot)
                        (rk-frame-and-slot-of varname instant)
-    (values (frame-class frame) slot)))
+    (values (parmenides::frame-class frame) slot)))
 
 ;;; Returns (values condenumber sname).  condenumber is the origin-0 conde
 ;;; position of varname in the condition elements in the given instantiation.
@@ -3180,19 +3119,6 @@
 
 
 ;;; Implementation-unspecific things.
-
-;;; Returns T iff a is a pre-defined commonlisp type, in spice, symbolics or
-;;; kyoto.  Each of these lisps has their own weird (wrong) behaviour
-;;; with subtypep.
-(defun correct-common-p (a)
-  (cond ((kyoto-lisp-p)
-         (and (not (subtypep a 'wme))
-              (cadr (multiple-value-list
-                     (subtypep a NIL)))))       ;;Is Kyoto lisp sure?
-        ((cmu-common-lisp-p)
-         (and (not (subtypep a 'wme))
-              (subtypep a 'common)))))
-
 
 #-(or :cmu lucid symbolics)
     (defmacro grindef (fname)

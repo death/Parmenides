@@ -11,43 +11,23 @@
 ;;;; PACKAGE STUFF                                                        ;;;
 ;;;;
 
-(in-package "FRULEKIT" :use '("LISP" "PARMENIDES"))
-;;; User-accessible trace functions, macros and variables documented in the
-;;; user's manual.  The core FRulekit symbols are exported from build.lisp.
-
-(export '(              ;; FUNCTIONS & MACROS
-           var-names-of var-in-instant instant-wmes-of prod-of
-           give-additions-on-cycle give-deletions-on-cycle give-matches
-           give-firings give-next-matches give-next-firings
-           give-matches-on-cycle give-firings-on-cycle give-named-matches
-           give-un-matches-on-cycle
-           give-named-firings lhs-of rhs-of prod-responsible-for
-           possible-prods-responsible-for in-wmp give-instant give-negs
-           rule-rhs-of
-
-        ;; Patty Cheng's additions
-           Give-firing-on-cycle Give-linear-trace Give-prod-name
-
-        ;; Def-frame accessors
-           Wme-%matches Wme-%firings Wme-%label
-         ))
-
-(load-messages (format NIL "~Atr-messages.~A" *FR-PATHNAME* *LANGUAGE*))
+(in-package #:frulekit)
 
 ;;; FIX: give-firing-on-cycle off by one
-(proclaim '(simple-vector
-            *PROD-MATCHES*      ;;List of instantiations added on cycle N.
-            *PROD-UNMATCHES*    ;;List of instantiations removed on cycle N.
-            *PROD-FIRINGS*      ;;List of fired instantiations for cycle N.
-            *ADDITIONS*
-            *DELETIONS*))
-(proclaim '(special
-            *RECORD-LEVEL*      ;;On iff the trace package is active.
-            *MAX-BACK*))
+(declaim (simple-vector
+          *PROD-MATCHES* ;;List of instantiations added on cycle N.
+          *PROD-UNMATCHES* ;;List of instantiations removed on cycle N.
+          *PROD-FIRINGS*   ;;List of fired instantiations for cycle N.
+          *ADDITIONS*
+          *DELETIONS*))
+
+(declaim (special
+          *RECORD-LEVEL* ;;On iff the trace package is active.
+          *MAX-BACK*))
 
 (defvar *MAX-BACK* 50)
 
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (def-frame wme (setable :setf propagate NIL pre-if-set (pre-modify)
                            post-if-set (post-modify) cache :*ALL*)
   %time 0         ;; time tag, saying when it was created
@@ -59,13 +39,13 @@
                   ;;is loaded and the WME is made by a remove or modify.
  ))
 
+(defvar *PROD-MATCHES* (make-array *MAX-BACK* :initial-element nil))
+(defvar *PROD-UNMATCHES* (make-array *MAX-BACK* :initial-element nil))
+
 ;;Should only have to be called once.  re-init-trace is for re-initiailizing.
 (defun init-trace ()
   (setf *RECORD-LEVEL* 2)               ;; User probaly wants tracing activated.
-  (defvar *PROD-MATCHES* (make-array *MAX-BACK* :initial-element nil))
-  (defvar *PROD-UNMATCHES* (make-array *MAX-BACK* :initial-element nil))
-  (ml-format T :tracing-activated)
-)
+  (ml-format T :tracing-activated))
 
 (init-trace)
 
@@ -82,7 +62,7 @@
 ;;; a wme structure created by Rulekit.
 ;;; Used by functions which take a ?wme as input, and dispatches depending
 ;;; on whether the given ?wme is positive or negative.
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro process-?wme (?wme fn)
     `(if (positive-pattern ,?wme)
          (,fn (cdr ,?wme))
@@ -105,7 +85,7 @@
 (defun give-firings (?wme)
   (process-?wme ?wme wme-%prod-firings))
 
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
 
 ;;; Given a wme, return the list of instantiations which were created
 ;;; on the very next cycle after ?WME was added.
@@ -294,7 +274,7 @@
             ',value))))
 
 
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro give-additions-on-cycle (n)
     `(svref *ADDITIONS* ,n))
 
@@ -318,7 +298,7 @@
 ;;; Some of this needs to be updated to work with the new FRulekit.
 
 ;;; returns the instantiation (for non-parallel systems) on cycle n
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro give-firing-on-cycle (n)
     `(car (give-firings-on-cycle ,n))))
 

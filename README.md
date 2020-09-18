@@ -39,7 +39,7 @@ which was written by the same author and that makes use of Parmenides.
 
 - create markdown version of doc/frulekit.mss
 
-- make FRulekit compile and load
+- get FRulekit examples to work
 
 # Introduction
 

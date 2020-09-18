@@ -9,47 +9,34 @@
 ;;;     Carnegie Mellon University
 ;;;     Pittsburgh, PA  15213
 
-;;; NOTE: parmenides.lisp must be loaded before this module is loaded or
-;;; compiled, since it contains necessary macros, defstructs and def-frames.
-
 ;;;; -------------------------------------------------------------------- ;;;
 ;;;; PACKAGE STUFF                                                        ;;;
 ;;;;
 
-(in-package "FRULEKIT" :nicknames '("FRK") :use '("LISP" "PARMENIDES"))
-;;; NOTE: the nickname "FR" is purposely not used since it is used for Framekit
-;;; BUILD's exportable symbols are exported from INTER since I group all
-;;; of BUILD and INTER's symbols in one place.
+(in-package #:frulekit)
 
 #+Allegro (import 'excl::putprop)
 
-;;; Directory in which the FRulekit multi-lingual messages reside.
-(defvar *FR-PATHNAME* "/afs/cs/usr/pshell/frulekit/")
-(load-messages (format NIL "~Afr-messages.~A" *FR-PATHNAME* *LANGUAGE*))
-
-(defun frk-define-language (language)
-  (load-messages (format NIL "~Afr-messages.~A" *FR-PATHNAME* language))
-  (define-language language))           ;; Tell parmenides about it
-
 ;;; This module is for compiling FRulekit rules into the Rete net.
-(proclaim '(special
-            *TOP-RETE-NODE* *RETE-VAR-TO-LEFT-TEST* *RETE-VAR-TO-RIGHT-TEST*
-            *BETA-TEST* *PRED-TAGS* *NUM-ORS* *AREF-FN-NAMES*   ;; Parmenides
-            *RETE-TEST-HASH* *RETE-N-NODE-HASH* *PRINT-DEPTH* *CONFLICT-SET*
-            *RULE-NAMES* *NEWNODE* *NEWNODES* *CHECKVARS* *MAX-BACK* *FIRST-BIND*
-            *BIND-VARS* *CVARS* *CHECKS-BETAS* *RK-VARP* *FORMAT* *TRACE-SHARE*
-            *OLDBETA* *BUILDING* *NUM-BETAS* *NUM-ALPHAS* *AGENDA-LOADED*
-            *BIND-ACCESS* *ALPHA-LISP-TEST* *BIND-COUNT* *NUM-BINDS* *BIND-NUMS*
-            *CYCLE* *MODCYCLE* *RIGHT-DISJ-LIST* *LEFT-DISJ-LIST* *IN-DISJUNCT*
-            *ADDED-INSTANTS* *REMOVED-INSTANTS* *TYPE-LENGTH* *BIND-VARS-DISJ*
-            *DONT-WARN-LISP-CHECKS* *FIRED-INSTANTS*))
+(declaim (special
+          *TOP-RETE-NODE* *RETE-VAR-TO-LEFT-TEST* *RETE-VAR-TO-RIGHT-TEST*
+          *BETA-TEST* *PRED-TAGS* *NUM-ORS* PARMENIDES::*AREF-FN-NAMES*
+          *RETE-TEST-HASH* *RETE-N-NODE-HASH* *PRINT-DEPTH* *CONFLICT-SET*
+          *RULE-NAMES* *NEWNODE* *NEWNODES* *CHECKVARS* *MAX-BACK* *FIRST-BIND*
+          *BIND-VARS* *CVARS* *CHECKS-BETAS* *RK-VARP* *FORMAT* *TRACE-SHARE*
+          *OLDBETA* *BUILDING* *NUM-BETAS* *NUM-ALPHAS* *AGENDA-LOADED*
+          *BIND-ACCESS* *ALPHA-LISP-TEST* *BIND-COUNT* *NUM-BINDS* *BIND-NUMS*
+          *CYCLE* *MODCYCLE* *RIGHT-DISJ-LIST* *LEFT-DISJ-LIST* *IN-DISJUNCT*
+          *ADDED-INSTANTS* *REMOVED-INSTANTS* *TYPE-LENGTH* *BIND-VARS-DISJ*
+          *DONT-WARN-LISP-CHECKS* *FIRED-INSTANTS*))
 
 ;;; Trace data structures.
-(proclaim '(simple-vector
-            *PROD-MATCHES* *PROD-UNMATCHES* *PROD-FIRINGS*
-            *ADDITIONS* *DELETIONS* *MODIFIES*
-            *REFRACTIONS* *NON-DELETIONS*))
+(declaim (simple-vector
+          *PROD-MATCHES* *PROD-UNMATCHES* *PROD-FIRINGS*
+          *ADDITIONS* *DELETIONS* *MODIFIES*
+          *REFRACTIONS* *NON-DELETIONS*))
 
+(defvar *PRINT-DEPTH* 0)
 (defvar *MAX-BACK* 50)
 (defvar *NAME-NODES* NIL)       ;; Controls whether FRK gives names to rete nodes
 (defvar *RULEKIT-TERSE* NIL)
@@ -66,7 +53,7 @@
 (defvar *NON-DELETIONS* (make-array *MAX-BACK* :initial-element NIL))
 (defvar *BIND-COUNT* '(make-array NIL))
 
-(proclaim '(bit-vector *NODETYPE* *ALPHA-NODETYPE*))
+(declaim (bit-vector *NODETYPE* *ALPHA-NODETYPE*))
 (defvar *TYPE-LENGTH* 8)        ;; Number of bits in the type field
 (defvar *NODETYPE*
   (make-array *TYPE-LENGTH* :element-type 'bit :initial-element 0))
@@ -89,7 +76,7 @@
 (defvar *ACTIVE-BIT*    6)
 (defvar *BLOCKED-BIT*   7)
 
-(proclaim '(bit-vector *TNODE-TYPE* *NNODE-TYPE*))
+(declaim (bit-vector *TNODE-TYPE* *NNODE-TYPE*))
 (defvar *TNODE-TYPE*
   (make-array *TYPE-LENGTH* :element-type 'bit :initial-element 0))
 (setf (sbit *TNODE-TYPE* *TNODE-BIT*) 1)
@@ -122,7 +109,7 @@
 ;;; RETE-N-NODE-HASH is the analagous hash table for any class tests, and is
 ;;; disjoint from RETE-TEST-HASH.
 
-(eval-when (eval load compile)
+(eval-when (:execute :load-toplevel :compile-toplevel)
   (defstruct (rete-node (:print-function rete-node-printer))
    test         ;;The test for any node - slot-access fn, variable binding
                 ;; consisteny, or class type.  Implemented as a CL fn object.
@@ -253,7 +240,6 @@
                ,@body))))
 
 ;;; A FRulekit rule which may be placed in an Frulekit agenda or rete net.
-;;; The agenda slots are defined in the agenda module.
   (defstruct rk-rule
     pnode       ;;keep a back-pointer to the production node that points to it
     rhs         ;;text of the RHS
@@ -267,14 +253,27 @@
                 ;; contain any tests referring to the variables in the LHS;
                 ;; those types of tests go in the LHS.  Default is
                 ;; current-rule-in-conflict-set-p.
-    num-tests   ;; (num-alha&beta-tests . num-check-vars) for each conde.
+    num-tests   ;; (num-alpha&beta-tests . num-check-vars) for each conde.
     (inscount 0 :type integer)  ;; #  instant.s of this rule in conflict set
     (break NIL :type atom)      ;; Flag saying when to pause this rule.
                 ;; Possible values are  :BEFORE, :AFTER, :ALWAYS, or NIL.
     disj-nodes  ;; points to disjunctive-nodes structure, below (if any).
     rhs-fn      ;; For the function version of rhs
     beliefs-fn  ;; and beliefs.
-)
+    ;; Agenda slots
+    add         ;; ((bucket-1 pos-1 . ruls-1) (bucket-2 pos-2 . ruls-2) ...)
+                ;; Adds the set of rules to each corresponding bucket at the
+                ;; specified position in the bucket iff the rule fires.
+    del         ;; Deletes ruls-i from bucket-i in the agenda.
+    ktest       ;; Lisp code, exectuted iff rule-test evals to nil (yes, nil).
+                ;; ONLY APPLICABLE WHEN AGENDA IS USED!
+    bucket-add  ;; ((bucket-name-1 <agenda-pos-1>) (bucket-name-2 <agenda-pos-2>))
+                ;; adds the given buckets to the agenda.
+    bucket-del  ;; (bucket-name-1 bucket-name-2 ...) deletes the given buckets.
+    bucket      ;; Added 20-Mar-87.  Improper list of bucket(s) that it's in.
+    instants    ;; Added 20-Mar-87.  List of active instantiations of rule.
+                ;; Now we can do c.r. only on the instants of the rule.
+    )
 
   (defstruct disj-nodes ;; Disjunctive rules point to these structures.
     parent              ;; List of rete node above disjunctive nodes for rule.
@@ -379,7 +378,7 @@
   (fill *NON-DELETIONS* NIL))
 
 ;;;; Variable access (and other) macros
-(eval-when (eval load compile)
+(eval-when (:execute :load-toplevel :compile-toplevel)
 
 ;;; Inverse of record-left-test-of-var
   (defmacro get-left-test (var)
@@ -534,7 +533,7 @@
 )
 
 (defun print-frulekit-herald ()
-  (format T "FRulekit Copyright (c) 1985, 1990 Carnegie Mellon.~%"))
+  (format T "~&FRulekit Copyright (c) 1985, 1990 Carnegie Mellon.~%"))
 
 ;;; Initialize the FRulekit net
 (defun init-rete ()
@@ -619,7 +618,7 @@
 ) |#
 
 
-(eval-when (load eval)
+(eval-when (:load-toplevel :execute)
   (init-rete)
   (print-frulekit-herald))
 
@@ -634,7 +633,7 @@
           (T
            (rk-format T :compiling-rule ',rname)
            (push ',rname *RULE-NAMES*)))
-    (putprop ',rname T 'defined)
+    (parmenides::putprop ',rname T 'defined)
     (let ((newrule
            (apply #'make-rk-rule ',slots)))
       (push NIL (rk-rule-rhs newrule))  ;;The RHS was made a lambda (26-Mar-87)
@@ -647,7 +646,7 @@
       (setf (rk-rule-inscount newrule) 0)
       (add-extra-test newrule)
       (setf (rk-rule-pname newrule) ',rname)
-      (putprop ',rname newrule 'prod)
+      (parmenides::putprop ',rname newrule 'prod)
       (setf (rk-rule-lhs newrule)
             (preprocess-conds (copy-tree (rk-rule-lhs newrule))))
       (compile-prod ',rname (rk-rule-lhs newrule) newrule))))
@@ -676,7 +675,7 @@
       (T
        (rk-format T :compiling-rule rname)
        (push rname *RULE-NAMES*)))
-  (putprop rname T 'defined)
+  (parmenides::putprop rname T 'defined)
   (let ((newrule
          (make-rk-rule :LHS lhs :RHS rhs)))
     (push NIL (rk-rule-rhs newrule))   ;; The RHS was made a lambda (26-Mar-87)
@@ -689,7 +688,7 @@
     (setf (rk-rule-inscount newrule) 0)
     (add-extra-test newrule)
     (setf (rk-rule-pname newrule) rname)
-    (putprop rname newrule 'prod)
+    (parmenides::putprop rname newrule 'prod)
     (setf (rk-rule-lhs newrule) (preprocess-conds (rk-rule-lhs newrule)))
     (compile-prod rname (rk-rule-lhs newrule) newrule)
     rname))
@@ -730,7 +729,7 @@
   `(let ((newrule
           (make-rk-rule ,@slots)))
      (setf (rk-rule-pname newrule) ',rname)
-     (putprop ',rname newrule 'prod)))
+     (parmenides::putprop ',rname newrule 'prod)))
 
 ;;; FIX!
 (defun modify-rk-rule (rule slots)
@@ -771,7 +770,7 @@
         *BIND-NUMS* NIL
         *NEWNODES* NIL
         *OLDBETA* NIL
-        *BIND-ACCESS* *AREF-FN-NAMES*   ;;From Parmenides
+        *BIND-ACCESS* PARMENIDES::*AREF-FN-NAMES*
         *BIND-VARS* NIL
         *FIRST-BIND* NIL
         *NUM-BINDS* -1
@@ -803,7 +802,8 @@
                                 :test #'string=)
                         (not (eq last-nest origconde)))         ;; Nested from
                    (nconc (car last-nest) (list sname))         ;; last time
-                   (delete sname (car origconde))))
+                   (setf (car origconde)
+                         (remove sname (car origconde)))))
             (setq sname (car conde) conde (cdr conde)))
            ((eq sname *LEFT-BRACKET*)                   ;;skip over bracket
             (setq sname (cdr conde))
@@ -847,7 +847,7 @@
            label-name)
           (T
            (do* ((i 1 (1+ i))
-                 (new-name (smash label-name i) (smash label-name i)))
+                 (new-name (parmenides::smash label-name i) (parmenides::smash label-name i)))
                 ((and (not (member new-name *NEW-LABEL-NAMES*))
                       (not (label-in-ces-p new-name condes)))
                  (push new-name *NEW-LABEL-NAMES*)
@@ -925,7 +925,7 @@
       (push *OLDBETA* (disj-nodes-parent (rk-rule-disj-nodes prod))))
   (turn-on (rete-node-type *OLDBETA*) *PARENT-BIT*)
   (let* ((*IN-DISJUNCT* T)
-         (*FIRST-BIND* (eq *BIND-ACCESS* *AREF-FN-NAMES*))
+         (*FIRST-BIND* (eq *BIND-ACCESS* PARMENIDES::*AREF-FN-NAMES*))
          (disjuncts (mapcar #'identity clause))
          (left-access-lists (make-sequence 'list (length clause)
                                            :initial-element NIL))
@@ -1204,18 +1204,18 @@
             (setq conds (cdr conds)))
            ((eq cond *LEFT-BRACKET*)
             (if (atom (cadr conds))
-                (push (assure-keyword (cadr conds)) res))
+                (push (parmenides::assure-keyword (cadr conds)) res))
             (setq conds (cdddr conds))
             (if (eq (car conds) *RIGHT-BRACKET*)
                 (setq conds (cddr conds))
                 (setq conds (cdr conds))))
            (T
-            (push (assure-keyword cond) res)
+            (push (parmenides::assure-keyword cond) res)
             (setq conds (cddr conds))))
      (if (null conds) (return res)))))
 
 ;;; Used only by make-slot-tests.
-(eval-when (load eval compile)
+(eval-when (:execute :load-toplevel :compile-toplevel)
   (defmacro process-value (value facet make-exp)
     `(cond ((rk-anyp ,value)
             (setq varname (cadr ,value))
@@ -1651,7 +1651,7 @@
 ;;; has been BIND'ed by a sibling disjunct, then make this var have the
 ;;; same access as the original one.  Need to pass in varname.
 (defun make-var-binding (test betap varname)
-  (if (or (eq *BIND-ACCESS* *AREF-FN-NAMES*)
+  (if (or (eq *BIND-ACCESS* PARMENIDES::*AREF-FN-NAMES*)
           (and *FIRST-BIND* (not *BIND-VARS-DISJ*)))
       (list 'progn
             (make-initial-bind-test-of-conde betap)
@@ -1661,7 +1661,7 @@
 
 ;;; MBIND implemented 25-Feb-87.
 (defun make-mvar-bindings (num-binds test betap varnames)
-  (if (or (eq *BIND-ACCESS* *AREF-FN-NAMES*)
+  (if (or (eq *BIND-ACCESS* PARMENIDES::*AREF-FN-NAMES*)
           (and *FIRST-BIND* (not *BIND-VARS-DISJ*)))
       (list 'progn
             (make-initial-bind-test-of-conde betap)
@@ -1726,7 +1726,7 @@
   (let ((bind-num (get-bind-num-for-var varname)))
     (when bind-num
       (push varname *BIND-VARS-DISJ*)
-      `(,(nth bind-num *AREF-FN-NAMES*) (token-bindval ,side)))))
+      `(,(nth bind-num PARMENIDES::*AREF-FN-NAMES*) (token-bindval ,side)))))
 
 ;;; Want left bind accesses whenever betap is true since bodies of BIND
 ;;; commands may reference leftward nodes (vars bound in previous CEs).
@@ -1898,7 +1898,7 @@
     (if facet
         `(get-instance-facet
           ,right-acc ,(dyn-subst-vars slot) ,(dyn-subst-vars facet))
-        `(get-atomic-value ,(dyn-subst-vars slot) ,right-acc))))
+        `(parmenides::get-atomic-value ,(dyn-subst-vars slot) ,right-acc))))
 ;; get-atomic-value dynamically gets the slot value if the slot in the frame
 ;; is not faceted, else gets the value facet of specified slot.
 
@@ -1966,26 +1966,24 @@
        (symbolp (car value))
        (string= (symbol-name (car value)) "ANYSUB")))
 
-;;; Smash is imported from parmenides.lisp.
 ;;; (class slot) ==> (class-slot.value) or (class-slot).
 (defun testify (class slot)
   (if (facetedp class slot)
-      (smash class "-" slot ".VALUE")
-      (smash class "-" slot)))
+      (parmenides::smash class "-" slot ".VALUE")
+      (parmenides::smash class "-" slot)))
 
-;;; Uses Parmenides fn pa-get-snf-nums.
 (defun testify2 (class slot facet0 thing)
-  (let* ((facet1 (if facet0 (assure-keyword facet0)))
-         (slot (assure-current slot))
+  (let* ((facet1 (if facet0 (parmenides::assure-keyword facet0)))
+         (slot (parmenides::assure-current slot))
          (facet (or facet1 (if (facetedp class slot) :value))))
     (cond ((eq facet :value)
-           (list (smash class "-" slot ".VALUE") thing))
+           (list (parmenides::smash class "-" slot ".VALUE") thing))
           ((null facet)
-           (list (smash class "-" slot) thing))
+           (list (parmenides::smash class "-" slot) thing))
           (T
            (multiple-value-bind (slotnum facetnum)
-                                (pa-get-snf-nums
-                                 class (assure-keyword slot) facet)
+                                (parmenides::pa-get-snf-nums
+                                 class (parmenides::assure-keyword slot) facet)
              (cond ((and facet (not (and slotnum facetnum)))
                     (ml-cerror :go-on :slot-facet-not-in-frame
                                slot facet class))

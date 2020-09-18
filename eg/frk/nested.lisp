@@ -3,6 +3,11 @@
 ;;; is a pointer to an actual state wme.  want-to-move-to-them creates this
 ;;; and move-to-them tests for this.
 
+(defpackage #:frulekit.nested
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.nested)
+
 (literalize goal (extendable nil)
   state NIL)
 

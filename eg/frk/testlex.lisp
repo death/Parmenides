@@ -1,5 +1,10 @@
 ;;; Test of the LEX c.r. strategy
 
+(defpackage #:frulekit.testlex
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.testlex)
+
 (literalize c1 ()
   a nil)
 
@@ -21,9 +26,8 @@
  :RHS ((format T "r2")))
 
 (defun begin ()
-  (start
-   (c3 :c 3)
-   (c1 :a 1)
-   (c2 :b 2)))
-
-(setq *CR-STRATEGY* *LEX*)
+  (let ((*cr-strategy* *lex*))
+    (start
+     (c3 :c 3)
+     (c1 :a 1)
+     (c2 :b 2))))

@@ -1,5 +1,10 @@
 ;;; Example of dynamic slot specification in FRulekit.
 
+(defpackage #:frulekit.dynamic
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.dynamic)
+
 (literalize context ()
   slots NIL
   cur-slot NIL)

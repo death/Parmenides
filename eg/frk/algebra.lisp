@@ -3,7 +3,10 @@
 ;;;; Rulekit algebra rules for Fermi.
 ;;;;
 
-(use-package '(frulekit parmenides))
+(defpackage #:frulekit.algebra
+  (:use #:cl #:parmenides #:frulekit))
+
+(in-package #:frulekit.algebra)
 
 ;;; HISTORY:
 ;;;

@@ -1,6 +1,11 @@
 ;;; FRulekit example of nesting with CHECKS after the nested
 ;;; wme.
 
+(defpackage #:frulekit.nested2
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.nested2)
+
 (literalize wme1 ()
   a NIL
   child NIL)

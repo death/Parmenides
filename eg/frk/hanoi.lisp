@@ -1,7 +1,11 @@
 ;;; Rulekit program to solve the Tower of Hanoi problem.
 ;;; PARMENIDES version.
 
-(setq *CR-STRATEGY* *MEA*)
+(defpackage #:frulekit.hanoi
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.hanoi)
+
 (defvar *VERBOSE-HANOI* T)
 
 (literalize move (extendable nil)
@@ -36,7 +40,8 @@
           (format T "Moving disk ~A to top of peg ~A~%" =stack =to))))
 
 (defun begin ()
-  (solve-n :n 3))
+  (let ((*cr-strategy* *mea*))
+    (solve-n :n 3)))
 
 (defun solve-n (&key (n 3) (cycles 12))
   (let ((initial-list (iota-list n)))

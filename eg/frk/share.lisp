@@ -1,7 +1,10 @@
 ;;; Tests to make sure that rules with two shared alpha tests are handled
 ;;; correctly.
 
-(use-package 'frk)
+(defpackage #:frulekit.share
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.share)
 
 (literalize type1 ()
   :value nil)

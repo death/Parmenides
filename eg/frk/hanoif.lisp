@@ -1,7 +1,10 @@
 ;;; Rulekit program to solve the Tower of Hanoi problem.
 ;;; PARMENIDES version.
 
-(setq *CR-STRATEGY* *MEA*)
+(defpackage #:frulekit.hanoif
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.hanoif)
 
 (literalize move (extendable nil)
   stack (value nil)
@@ -39,11 +42,12 @@
         (format T "Moving disk ~A to top of peg ~A" =stack =to)))
 
 (defun begin ()
-  (start
-   (on :peg `(value ,1) :disk '(value (1 2 3)))
-   (on :peg `(value ,2) :disk `(value ,NIL))
-   (on :peg `(value ,3) :disk `(value ,NIL))
-   (move :stack `(value (1 2 3)) :from `(value ,1) :to `(value ,3))))
+  (let ((*cr-strategy* *mea*))
+    (start
+     (on :peg `(value ,1) :disk '(value (1 2 3)))
+     (on :peg `(value ,2) :disk `(value ,NIL))
+     (on :peg `(value ,3) :disk `(value ,NIL))
+     (move :stack `(value (1 2 3)) :from `(value ,1) :to `(value ,3)))))
 
 ;;Utility functions for tower-of-Hanoi
 (defun allbutlast (a)

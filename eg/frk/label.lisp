@@ -1,6 +1,11 @@
 ;;; Demonstrates the ability of FRulekit to do label test after the var has
 ;;; been bound.
 
+(defpackage #:frulekit.label
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.label)
+
 (literalize person ()
   age T
   child T)

@@ -39,77 +39,34 @@
 ;;;; PACKAGE STUFF                                                        ;;;
 ;;;;
 
-(in-package "FRULEKIT" :use '("LISP" "PARMENIDES"))
+(in-package #:frulekit)
 
-;;; User-accessible agenda functions, macros and variables documented in the
-;;; user's manual.  The core FRulekit symbols are exported from build.lisp.
-(export '(              ;; FUNCTIONS & MACROS
-          R-linear R-cycle R-priority R-agenda Create-new-agenda
-          Cont-agenda Add-rule Add-rules Make-bucket Add-buckets
-          Add-bucket Add-new-bucket Delete-rules Delete-buckets
-          Delete-bucket Get-bucket Compile-extra-tests
-          Rk-rule-add Rk-rule-del Rk-rule-bucket-add
-          Rk-rule-bucket-del Rk-rule-ktest Rk-rule-bucket Rk-rule-instants
-
-    ;; VARIABLES
-          !trace-test !trace-act !trace-agenda !!control *AGENDA*
-         ))
-
-(load-messages (format NIL "~Aag-messages.~A" *FR-PATHNAME* *LANGUAGE*))
-
-(proclaim '(special
-            !count-act          ;; counts rules fired
-            !count-test         ;; counts rules tested
-            !time
-            !value
-            !test
-            !!control           ;; for agenda control structure -- see below
-            !trace-agenda       ;; for tracing all adds & deletes to agenda
-            !trace-act          ;; for rule tracing (all rules fired)
-            !trace-test         ;; for rule tracing (all rules tested)
-            *CURRENT-RULE-NAME* ;; current rule that's being tested, for inter.
-            *RULE-NAMES*
-            bucket-ptr
-            *SWITCHES*))
+(declaim (special
+          !count-act    ;; counts rules fired
+          !count-test   ;; counts rules tested
+          !time
+          !value
+          !test
+          !!control       ;; for agenda control structure -- see below
+          !trace-agenda   ;; for tracing all adds & deletes to agenda
+          !trace-act      ;; for rule tracing (all rules fired)
+          !trace-test     ;; for rule tracing (all rules tested)
+          *CURRENT-RULE-NAME* ;; current rule that's being tested, for inter.
+          *RULE-NAMES*
+          bucket-ptr
+          *SWITCHES*))
 
 (defvar *AGENDA* nil)  ;;Holds the current agenda, a list of bucket names.
-                   ;;This allows deleting and adding of buckets to the agenda.
-(eval-when (load eval)
+
+;;This allows deleting and adding of buckets to the agenda.
+(eval-when (:load-toplevel :execute)
   (if (not *AGENDA-LOADED*)
-      (nconc *SWITCHES* '(!!control !trace-agenda !trace-act !trace-bucket
-                                    !count-act !count-test))))
+      (setf *switches*
+            (append *SWITCHES* '(!!control !trace-agenda !trace-act !trace-bucket
+                                 !count-act !count-test)))))
+
 (setq *AGENDA-LOADED* T)
 (defvar agenda-ptr nil)
-
-(eval-when (load eval compile)
-  (defstruct rk-rule
-    pnode       ;; a back-pointer to the prod. node that points to it
-    rhs         ;;text of the rhs
-    lhs         ;;text of the lhs
-    beliefs     ;;text of the belief RHS
-    left-access
-    (pname NIL :type atom)
-    extra-test  ;; Was called test.  Lisp expression that must be true in
-                ;; addition to the working memory (LHS) tests.  Should not contain
-                ;; any tests referring to the variables in the LHS; those types of
-                ;; tests go in the LHS.  Default is current-rule-in-conflict-set-p.
-    num-tests   ;; (num-alha&beta-tests . num-check-vars) for each conde.
-    (inscount 0 :type integer)  ;; the number of instantions of this rule in the conflict set
-    (break NIL :type atom)      ;; flag saying when to break relative to firing.
-    disj-nodes  ;; points to top&bottom disjunctive nodes (if any).
-    add         ;; ((bucket-1 pos-1 . ruls-1) (bucket-2 pos-2 . ruls-2) ...)
-                ;; Adds the set of rules to each corresponding bucket at the
-                ;; specified position in the bucket iff the rule fires.
-    del         ;; Deletes ruls-i from bucket-i in the agenda.
-    ktest       ;; Lisp code, exectuted iff rule-test evals to nil (yes, nil).
-                ;; ONLY APPLICABLE WHEN AGENDA IS USED!
-    bucket-add  ;; ((bucket-name-1 <agenda-pos-1>) (bucket-name-2 <agenda-pos-2>))
-                ;; adds the given buckets to the agenda.
-    bucket-del  ;; (bucket-name-1 bucket-name-2 ...) deletes the given buckets.
-    bucket      ;; Added 20-Mar-87.  Improper list of bucket(s) that it's in.
-    instants    ;; Added 20-Mar-87.  List of active instantiations of rule.
-                ;; Now we can do c.r. only on the instants of the rule.
-    ))
 
 ;;;  test:, ktest:, action:, add:, del: makes commonlisp look for a package
 ;;;  since commonlisp sees <symbol>: as a reference to a package.
@@ -127,10 +84,11 @@
   (setq !count-test 0)
   (setq !count-act 0))
 
-(eval-when (load eval) (init-agenda))
+(eval-when (:load-toplevel :execute)
+  (init-agenda))
 
 ;;; A rulekit bucket, which contains a list of rules.
-(eval-when (eval load compile)
+(eval-when (:execute :load-toplevel :compile-toplevel)
   (defstruct (bucket (:print-function bucket-printer)
                      (:constructor make-bucket0))
     contents
@@ -370,7 +328,7 @@
     (dolist (rname contents)
       (pushnew bucket
                   (rk-rule-bucket (get rname 'prod))))
-    (putprop bname bucket 'bucket)
+    (parmenides::putprop bname bucket 'bucket)
     bucket))
 
 ;;; Returns the total of all the inscounts of the given rule names.
@@ -392,7 +350,7 @@
 
 
 ;;; returns the list of rules given the bucket name
-(eval-when (load eval compile)
+(eval-when (:load-toplevel :execute :compile-toplevel)
   (defmacro get-bucket (bname)
     `(bucket-contents (get ,bname 'bucket))))
 
@@ -652,7 +610,7 @@
     (and !trace-agenda
          (ml-format T :rule-removing rul bname))
     (modify-bucket (car agenda-ptr)
-                   (delete rul bucket))
+                   (delete rul (bucket-contents bucket)))
     (if (get rul 'prod)
         (decf (bucket-inscount bucket)
               (rk-rule-inscount (get rul 'prod))))))

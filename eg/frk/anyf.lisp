@@ -3,7 +3,12 @@
 ;;; For example, =!person expands to =person (CHECK (isa-instance
 ;;; =person 'person))
 
-(literalize person () (extendable nil cache (walks))
+(defpackage #:frulekit.anyf
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.anyf)
+
+(literalize person (extendable nil cache (walks))
   walks (value 'yes)
   child ())
 

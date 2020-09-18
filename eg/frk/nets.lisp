@@ -1,8 +1,10 @@
 ;;; FRulekit program to demonstrate the propagation ability of PARMENIDES
 ;;; together with the pre-set and post-set demons.
 
-(use-package 'parmenides)
-(use-package 'frulekit)
+(defpackage #:frulekit.nets
+  (:use #:cl #:frulekit #:parmenides))
+
+(in-package #:frulekit.nets)
 
 ;;; FRulekit by default makes classes not propagatable.
 (literalize person (:propagate T :cache :*ALL*)
@@ -15,20 +17,16 @@
   (set-facet 'person :walks :value 'yes))
 
 (RULE find-walking-boy
-  :LHS (
-   (boy :age =a :walks yes (LABEL =b)))
-  :RHS (
-   (format T "Found walking boy ")
-   (pp-wme =b)
-   (set-facet-demons 'person 'walks 'value 'no)))
+  :LHS ((boy :age =a :walks yes (LABEL =b)))
+  :RHS ((format T "Found walking boy ")
+        (pp-wme =b)
+        (set-facet-demons 'person 'walks 'value 'no)))
 
 (RULE find-non-walking-boy
-  :LHS (
-   (boy :walks no (LABEL =b)))
-  :RHS (
-   (format T "Found non-walking boy ")
-   (pp-wme =b)
-   ($remove =b)))
+  :LHS ((boy :walks no (LABEL =b)))
+  :RHS ((format T "Found non-walking boy ")
+        (pp-wme =b)
+        ($remove =b)))
 
 (defun begin ()
   (init-testnet)

@@ -1,5 +1,10 @@
 ;;; This is an example of using the FRulekit BIND command on the LHS.
 
+(defpackage #:frulekit.mbindex
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.mbindex)
+
 (literalize table ()
   weight NIL
   max NIL)
@@ -50,7 +55,7 @@
 
 
 (defun begin2 ()
-  (setq *PAUSE-EVERY-CYCLE* T)
-  (start (wme2) (wme1 :time 10) (wme1 :time 10) (wme1 :time 11)))
+  (let ((*PAUSE-EVERY-CYCLE* T))
+    (start (wme2) (wme1 :time 10) (wme1 :time 10) (wme1 :time 11))))
 
 ;;; Causes test2 and test3 to fire alternately.
