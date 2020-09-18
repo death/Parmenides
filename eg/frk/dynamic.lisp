@@ -11,10 +11,10 @@
 
 (RULE print-slot
   :LHS ((context :cur-slot =c :slots =s (CHECK =c) (LABEL =context))
-	(data [=c] =val [a value] =a (CHECK (> =val 0))))
+        (data [=c] =val [a value] =a (CHECK (> =val 0))))
   :RHS ((format T "The ~A slot of data is: ~A~%" =c =val)
-	(format T "The value of the A slot is: ~A~%" =a)
-	($modify =context :cur-slot (cadr =s) :slots (cdr =s))))
+        (format T "The value of the A slot is: ~A~%" =a)
+        ($modify =context :cur-slot (cadr =s) :slots (cdr =s))))
 
 
 ;;; Causes FRulekit to print the value of each of the slots :a, :b, and :c.

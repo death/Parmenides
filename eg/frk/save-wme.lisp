@@ -11,7 +11,7 @@ Status: R
 
 Peter;
 
-	Load the following into a clean environment:
+        Load the following into a clean environment:
 
 ****************************************************************
 |#
@@ -38,47 +38,47 @@ Peter;
   mod (:value nil :original nil :diff-explained-by nil)
   comment
     (:value nil :duration nil :state nil
-	    :parsed nil
-	    :explain-missing-bg nil :explain-extra-bg nil
-	    :reaction-degree nil :treated-reaction 'unknown
-	    :explain-dose-change nil :dose-type 'regular :dose-adjustment 0
-	    :explain-calorie-change nil :meal-timing nil
-	    :activity-type nil :activity-degree nil
-	    :calorie-type nil :calorie-degree nil :high-glycemic-index nil
-	    :physiology-type nil :physiology-degree nil
-	    :emotion-type nil :emotion-degree nil)
+            :parsed nil
+            :explain-missing-bg nil :explain-extra-bg nil
+            :reaction-degree nil :treated-reaction 'unknown
+            :explain-dose-change nil :dose-type 'regular :dose-adjustment 0
+            :explain-calorie-change nil :meal-timing nil
+            :activity-type nil :activity-degree nil
+            :calorie-type nil :calorie-degree nil :high-glycemic-index nil
+            :physiology-type nil :physiology-degree nil
+            :emotion-type nil :emotion-degree nil)
   reg-mod
     (:value nil :evaluated nil
-	    :summary-list nil :plausible-list nil
-	    :rebound nil
-	    :increased-activity nil
-	    :increased-activity-delayed nil :increased-activity-concurrent nil
-	    :decreased-activity nil
-	    :decreased-activity-delayed nil :decreased-activity-concurrent nil
-	    :increased-calorie nil :increased-calorie-delayed nil
-	    :decreased-calorie nil
-	    :immediate-ketonuria nil :preceding-ketonuria nil
-	    :illness nil :illness-concurrent nil
-	    :menses nil :menses-concurrent nil
-	    :anger nil :anger-concurrent nil
-	    :joy nil :joy-concurrent nil
-	    :excitement nil :excitement-concurrent nil
-	    :grief nil :grief-concurrent nil
-	    :anxiety nil :anxiety-concurrent nil
-	    :snacking nil :admin-error nil
-	    :asleep nil :unknown nil)
+            :summary-list nil :plausible-list nil
+            :rebound nil
+            :increased-activity nil
+            :increased-activity-delayed nil :increased-activity-concurrent nil
+            :decreased-activity nil
+            :decreased-activity-delayed nil :decreased-activity-concurrent nil
+            :increased-calorie nil :increased-calorie-delayed nil
+            :decreased-calorie nil
+            :immediate-ketonuria nil :preceding-ketonuria nil
+            :illness nil :illness-concurrent nil
+            :menses nil :menses-concurrent nil
+            :anger nil :anger-concurrent nil
+            :joy nil :joy-concurrent nil
+            :excitement nil :excitement-concurrent nil
+            :grief nil :grief-concurrent nil
+            :anxiety nil :anxiety-concurrent nil
+            :snacking nil :admin-error nil
+            :asleep nil :unknown nil)
   LA-mod
     (:value nil :evaluated nil
-	    :summary-list nil :plausible-list nil
-	    :increased-activity nil
-	    :decreased-activity nil
-	    :snacking nil
-	    :misc nil :unknown nil)
+            :summary-list nil :plausible-list nil
+            :increased-activity nil
+            :decreased-activity nil
+            :snacking nil
+            :misc nil :unknown nil)
   calorie-mod
     (:value nil :evaluated nil
-	    :summary-list nil :plausible-list nil
-	    :reaction nil
-	    :increased-activity nil)
+            :summary-list nil :plausible-list nil
+            :reaction nil
+            :increased-activity nil)
   problems (:value nil))
 
 (def-frame treatable-event (:is-a (event) :cache *ALL*)
@@ -127,21 +127,21 @@ Peter;
 
 ****************************************************************
 
-	Big suckers, huh?
+        Big suckers, huh?
 
-	Anyway, now try (save-wme 'patient-6): this does the right thing
-	(i.e. it generates a ($make-named ......) and returns NIL.
+        Anyway, now try (save-wme 'patient-6): this does the right thing
+        (i.e. it generates a ($make-named ......) and returns NIL.
 
-	Now try (save-wme 'event-545): this generates the array implementing
-	the frame, and then returns the same!
+        Now try (save-wme 'event-545): this generates the array implementing
+        the frame, and then returns the same!
 
-	For what it's worth, in a larger context of code having loaded
-	rules first, the former complains that 'patient-6 isn't a WME,
-	yet (isas 'patient-6) says it is. And when the stream is a file
-	(save-wme 'event-545) generates a (make-frame .....)!
+        For what it's worth, in a larger context of code having loaded
+        rules first, the former complains that 'patient-6 isn't a WME,
+        yet (isas 'patient-6) says it is. And when the stream is a file
+        (save-wme 'event-545) generates a (make-frame .....)!
 
-	Maybe if you fix the underlying (save-wme) problem the "isn't a WME"
-	will go away?
+        Maybe if you fix the underlying (save-wme) problem the "isn't a WME"
+        will go away?
 
 paul
 

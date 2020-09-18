@@ -6,14 +6,14 @@
 
 (RULE r1
   :LHS ((c1 :s1 1)
-	(c1 :s1 2)
-	(<abs> (c1 :s1 3)))
+        (c1 :s1 2)
+        (<abs> (c1 :s1 3)))
   :RHS ((format T "r1")))
 
 (RULE r2
   :LHS ((c1 :s1 1)
-	(c1 :s1 2)
-	(<abs> (c1 :s1 4)))
+        (c1 :s1 2)
+        (<abs> (c1 :s1 4)))
   :RHS ((format T "r2")))
 
 
@@ -34,5 +34,5 @@
   ($make 'c1 :s1 4)
   ($make 'c1 :s1 2)
   ($make 'c1 :s1 1)
-  ($remove (ith-wme 3))	     ;;the match count will be screwed up here.
+  ($remove (ith-wme 3))      ;;the match count will be screwed up here.
   ($remove ($make 'c1 :s1 3)))

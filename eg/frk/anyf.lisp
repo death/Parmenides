@@ -17,28 +17,28 @@
 #|
 (RULE find-person
   :LHS ((=!person :walks yes (LABEL =p))
-	(=!person :walks yes (LABEL =p1) (CHECK (<> =p =p1))))
+        (=!person :walks yes (LABEL =p1) (CHECK (<> =p =p1))))
   :RHS ((format T "Found any person:")
-	(pp-wme =p)))
+        (pp-wme =p)))
 |#
 
 (RULE find-walking-boy
   :LHS ((boy :age =a :walks yes (LABEL =b)))
   :RHS ((format T "Found walking boy ")
-	(pp-wme =b)
-	($make 'person :child `(value ,=b))))
+        (pp-wme =b)
+        ($make 'person :child `(value ,=b))))
 
 ;;Note that =!person matches a child since child isa person (by the
 ;;literalize).
 (RULE find-person-with-child
   :LHS ((person :child =!person (LABEL =p))
-	(boy :age =a :weight =a)
-	(boy :age =a))
+        (boy :age =a :weight =a)
+        (boy :age =a))
   :RHS ((format T "Found parent: ")
-	(pp-wme =p)
-	(format t "With child: ")
-	(pp-wme =person)
-	($remove =p)))
+        (pp-wme =p)
+        (format t "With child: ")
+        (pp-wme =person)
+        ($remove =p)))
 
 (defun begin ()
   (start

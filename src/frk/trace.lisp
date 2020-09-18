@@ -1,67 +1,67 @@
-;;; Rulekit TRACE package by Peter Shell.  Started 27-Jan-86. 
+;;; Rulekit TRACE package by Peter Shell.  Started 27-Jan-86.
 
 ;;; Copyright (c) 1985, 1988 Carnegie Mellon University.
 ;;; To obtain a copy of this software, please contact:
-;;;	Peter Shell
-;;;	School of Computer Science
-;;;	Carnegie Mellon University
-;;;	Pittsburgh, PA  15213
+;;;     Peter Shell
+;;;     School of Computer Science
+;;;     Carnegie Mellon University
+;;;     Pittsburgh, PA  15213
 
 ;;;; -------------------------------------------------------------------- ;;;
-;;;; PACKAGE STUFF							  ;;;
+;;;; PACKAGE STUFF                                                        ;;;
 ;;;;
 
 (in-package "FRULEKIT" :use '("LISP" "PARMENIDES"))
 ;;; User-accessible trace functions, macros and variables documented in the
 ;;; user's manual.  The core FRulekit symbols are exported from build.lisp.
 
-(export '(		;; FUNCTIONS & MACROS
-  	   var-names-of var-in-instant instant-wmes-of prod-of
-	   give-additions-on-cycle give-deletions-on-cycle give-matches
-	   give-firings give-next-matches give-next-firings
-	   give-matches-on-cycle give-firings-on-cycle give-named-matches
-	   give-un-matches-on-cycle
-	   give-named-firings lhs-of rhs-of prod-responsible-for
-	   possible-prods-responsible-for in-wmp give-instant give-negs
-	   rule-rhs-of
+(export '(              ;; FUNCTIONS & MACROS
+           var-names-of var-in-instant instant-wmes-of prod-of
+           give-additions-on-cycle give-deletions-on-cycle give-matches
+           give-firings give-next-matches give-next-firings
+           give-matches-on-cycle give-firings-on-cycle give-named-matches
+           give-un-matches-on-cycle
+           give-named-firings lhs-of rhs-of prod-responsible-for
+           possible-prods-responsible-for in-wmp give-instant give-negs
+           rule-rhs-of
 
-	;; Patty Cheng's additions
-	   Give-firing-on-cycle Give-linear-trace Give-prod-name
+        ;; Patty Cheng's additions
+           Give-firing-on-cycle Give-linear-trace Give-prod-name
 
-	;; Def-frame accessors
-	   Wme-%matches Wme-%firings Wme-%label
-	 ))
+        ;; Def-frame accessors
+           Wme-%matches Wme-%firings Wme-%label
+         ))
 
 (load-messages (format NIL "~Atr-messages.~A" *FR-PATHNAME* *LANGUAGE*))
 
 ;;; FIX: give-firing-on-cycle off by one
 (proclaim '(simple-vector
-	    *PROD-MATCHES*	;;List of instantiations added on cycle N.
-	    *PROD-UNMATCHES*	;;List of instantiations removed on cycle N.
-	    *PROD-FIRINGS*	;;List of fired instantiations for cycle N.
-	    *ADDITIONS*
-	    *DELETIONS*))
+            *PROD-MATCHES*      ;;List of instantiations added on cycle N.
+            *PROD-UNMATCHES*    ;;List of instantiations removed on cycle N.
+            *PROD-FIRINGS*      ;;List of fired instantiations for cycle N.
+            *ADDITIONS*
+            *DELETIONS*))
 (proclaim '(special
-	    *RECORD-LEVEL*	;;On iff the trace package is active.
-	    *MAX-BACK*))
+            *RECORD-LEVEL*      ;;On iff the trace package is active.
+            *MAX-BACK*))
 
 (defvar *MAX-BACK* 50)
 
 (eval-when (load eval compile)
   (def-frame wme (setable :setf propagate NIL pre-if-set (pre-modify)
-			   post-if-set (post-modify) cache :*ALL*)
-  %time 0	  ;; time tag, saying when it was created
-  %created TOP	  ;; pointer to production that added/deleted it
+                           post-if-set (post-modify) cache :*ALL*)
+  %time 0         ;; time tag, saying when it was created
+  %created TOP    ;; pointer to production that added/deleted it
   %prod-matches T  ;;pointer to instantiation which wme is part of
   %prod-firings T  ;;pointer to fired instantiations which wme is a part of
-  %label T	  ;;label of the corresponding conditon element that matched
-   		  ;;the original wme.  Only applicable when the trace package
-   		  ;;is loaded and the WME is made by a remove or modify.
+  %label T        ;;label of the corresponding conditon element that matched
+                  ;;the original wme.  Only applicable when the trace package
+                  ;;is loaded and the WME is made by a remove or modify.
  ))
 
 ;;Should only have to be called once.  re-init-trace is for re-initiailizing.
 (defun init-trace ()
-  (setf *RECORD-LEVEL* 2)		;; User probaly wants tracing activated.
+  (setf *RECORD-LEVEL* 2)               ;; User probaly wants tracing activated.
   (defvar *PROD-MATCHES* (make-array *MAX-BACK* :initial-element nil))
   (defvar *PROD-UNMATCHES* (make-array *MAX-BACK* :initial-element nil))
   (ml-format T :tracing-activated)
@@ -85,10 +85,10 @@
 (eval-when (load eval compile)
   (defmacro process-?wme (?wme fn)
     `(if (positive-pattern ,?wme)
-	 (,fn (cdr ,?wme))
-	 (if (negative-pattern ,?wme)
-	     (ml-format T :only-positives-wmes ',fn)
-	     (ml-error :wme-list ',fn ',?wme)))))
+         (,fn (cdr ,?wme))
+         (if (negative-pattern ,?wme)
+             (ml-format T :only-positives-wmes ',fn)
+             (ml-error :wme-list ',fn ',?wme)))))
 
 
 ;;; Every time a production matches, it adds that match to the list of matches
@@ -135,16 +135,16 @@
 
 (defun give-named-matches (pname cycle)
   (mapcan #'(lambda (ins)
-	      (and (eq pname (rk-rule-pname (instant-prod ins)))
-		   (list cycle ins)))
-	  (svref *PROD-MATCHES* cycle)))
+              (and (eq pname (rk-rule-pname (instant-prod ins)))
+                   (list cycle ins)))
+          (svref *PROD-MATCHES* cycle)))
 
 ;;; Firings are of the form (cycle-number instantiation)
 (defun give-named-firings (pname cycle)
   (mapcan #'(lambda (ins)
-	      (and (eq pname (rk-rule-pname (instant-prod ins)))
-		   (list cycle ins)))
-	  (svref *PROD-FIRINGS* cycle)))
+              (and (eq pname (rk-rule-pname (instant-prod ins)))
+                   (list cycle ins)))
+          (svref *PROD-FIRINGS* cycle)))
 
 
 (defun instantiated-lhs-of (instant)
@@ -177,29 +177,29 @@
        :%created *INSTANT*
        :%class ',(caar pattern)
        ,@(cdar pattern))
-     :tag ,pos)))	;;;; WON'T WORK
+     :tag ,pos)))       ;;;; WON'T WORK
 
 ;;Find the nodes that token matches by testing the token against the T nodes
 ;;and any alpha nodes coming out of the T nodes.
 (defun find-matches-of (token)
   (let ((tnodes
-	 (mapcan
-	  #'(lambda (tnode)
-	      (and (alpha-test-p token tnode)	;;; WON'T WORK
-		   (list tnode)))
-	  (rete-node-right-output *TOP-RETE-NODE*))))
+         (mapcan
+          #'(lambda (tnode)
+              (and (alpha-test-p token tnode)   ;;; WON'T WORK
+                   (list tnode)))
+          (rete-node-right-output *TOP-RETE-NODE*))))
     (mapcan #'(lambda (node)
-		(find-alpha-matches node token))
-	    tnodes)))
+                (find-alpha-matches node token))
+            tnodes)))
 
 ;;; This won't work.  Re-implement by searching from the alpha node,
 ;;; through the net, to all the pnodes.
 (defun find-alpha-matches (tnode token)
   (if (pnodep tnode) (list tnode)
       (mapcan #'(lambda (anode)
-		  (and (alpha-test-p token anode)
-		       (list (rete-node-name anode))))	;;;; WON'T WORK
-	      (rete-node-right-output tnode))))
+                  (and (alpha-test-p token anode)
+                       (list (rete-node-name anode))))  ;;;; WON'T WORK
+              (rete-node-right-output tnode))))
 
 
 ;;;  IMPLEMENTATION HELPER FUNCTIONS (ya gotta have 'em)
@@ -241,11 +241,11 @@
 ;;; the test.
 ;;; Returns a list of WMEs which match conde.  O[length(WM)].
 (defun in-wmp (conde)
-  (let ((test-fn (make-test-fn conde)))		;;from build.slisp.
+  (let ((test-fn (make-test-fn conde)))         ;;from build.slisp.
     (mapcan #'(lambda (wme)
-		(and (funcall test-fn wme)
-		     (list wme)))
-	      (wm (car conde)))))	;;returns all WMEs of class (car conde).
+                (and (funcall test-fn wme)
+                     (list wme)))
+              (wm (car conde)))))       ;;returns all WMEs of class (car conde).
 
 ;;; This used to be in build but belongs here.
 (defun make-test-fn (conde)
@@ -261,37 +261,37 @@
 (defun make-negative-test-fn (conde)
   `(lambda (x)
      (not
-      (and 
+      (and
        ,@(make-alpha-tests (car conde) (cdr conde))))))
 
 (defun make-alpha-tests (class conds)
   (do* ((conds conds (cddr conds))
-	(test (maybe-make-test class conds) (maybe-make-test class conds))
-	(res (and test (list test))
-	     (if test (push test res) res)))
+        (test (maybe-make-test class conds) (maybe-make-test class conds))
+        (res (and test (list test))
+             (if test (push test res) res)))
        ((null (cddr conds)) res)))
 
 (defun maybe-make-test (class conds)
   (cond ((rk-variablep (cadr conds))
-	 (ml-format T :ignoring-test (car conds) (cadr conds))
-	 nil)
-	(T (make-simple-alpha-test class (car conds) (cadr conds)))))
+         (ml-format T :ignoring-test (car conds) (cadr conds))
+         nil)
+        (T (make-simple-alpha-test class (car conds) (cadr conds)))))
 
 (defun make-simple-alpha-test (class slot value)
   (cond
    ((null slot) nil)
    ((numberp value)
     `(= (,(testify class slot) x)
-	,value))
+        ,value))
    ((constantp value)
     `(eq (,(testify class slot) x)
-	 ,value))
+         ,value))
    ((symbolp value)
     `(eq (,(testify class slot) x)
-	 ',value))
+         ',value))
    (T
     `(equal (,(testify class slot) x)
-	    ',value))))
+            ',value))))
 
 
 (eval-when (load eval compile)
@@ -305,11 +305,11 @@
 ;;since firings are instantiations, this is useless.
 ;;(defun give-instant (firing)
 ;;;  (car (member (cadr firing)
-;;;	       (svref *PROD-FIRINGS* (car firing)))))
+;;;            (svref *PROD-FIRINGS* (car firing)))))
 (defun nth-pos-conde (num prod)
   (do* ((lhs (rk-rule-lhs prod) (cdr lhs))
-	(i 1 (if (not (eq (car lhs) '<ABS>))
-		 (1+ i) i)))
+        (i 1 (if (not (eq (car lhs) '<ABS>))
+                 (1+ i) i)))
        ((= i num) (car lhs))
     (if (null lhs) (ml-error :only-condes i (rk-rule-pname prod) num))))
 
@@ -336,14 +336,14 @@
 ;;; returns the first wme of a particular class in an instantiation
 (defun give-wme-of-class (class inst)
   (some #'(lambda (wme) (if (eq class (wme-%class wme)) wme))
-	(instant-wmes-of inst)))
+        (instant-wmes-of inst)))
 
 ;;; returns a list of all wmes of a particular class in an instantiation
 (defun give-all-wmes-of-class (class inst)
   (mapcan #'(lambda (wme) (and (eq class (wme-%class wme))
-			       (list wme)))
-	  (instant-wmes-of inst)))
- 
+                               (list wme)))
+          (instant-wmes-of inst)))
+
 ;;; returns a list of the 1st wme of a particular class in a list
 ;;; of instantiations (e.g. the list returned by give-linear-trace)
 (defun give-trace-of-class (class lst)
@@ -366,14 +366,14 @@
 (defun give-trace-of-rhs (lst)
   (mapcar #'(lambda (inst) (rule-rhs-of (prod-of inst))) lst))
 
-;;; Given a plist (eg a CONDE without the class), returns a list of variables in 
+;;; Given a plist (eg a CONDE without the class), returns a list of variables in
 ;;; the plist at any depth
-(defun all-vars-in-list (lst)  
+(defun all-vars-in-list (lst)
   (cond ((null lst) nil)
-	((atom lst) nil)
-	((rk-variablep lst) (list (cadr lst)))
-	(T (nconc  (all-vars-in-list (car lst))
-		   (all-vars-in-list (cdr lst))))))
+        ((atom lst) nil)
+        ((rk-variablep lst) (list (cadr lst)))
+        (T (nconc  (all-vars-in-list (car lst))
+                   (all-vars-in-list (cdr lst))))))
 
 
 ;;; Given a plist (eg a CONDE without the class), returns a list of variables
@@ -385,14 +385,14 @@
     (loop
      (setq cond (car conds))
      (cond ((listp cond)
-	    (setq conds (cdr conds)))
-	   ((eq cond *LEFT-BRACKET*)
-	    (setq conds (cdddr conds))
-	    (if (eq (car conds) *RIGHT-BRACKET*)
-		(setq conds (cdr conds))))
-	   (T
-	    (setq conds (cdr conds))
-	    (if (rk-variablep (car conds))
-		(push (cadr (car conds)) res))
-	    (setq conds (cdr conds))))
+            (setq conds (cdr conds)))
+           ((eq cond *LEFT-BRACKET*)
+            (setq conds (cdddr conds))
+            (if (eq (car conds) *RIGHT-BRACKET*)
+                (setq conds (cdr conds))))
+           (T
+            (setq conds (cdr conds))
+            (if (rk-variablep (car conds))
+                (push (cadr (car conds)) res))
+            (setq conds (cdr conds))))
      (if (null conds) (return res)))))

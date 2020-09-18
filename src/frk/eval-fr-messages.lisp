@@ -87,7 +87,7 @@
 (frk::rk-format T :compiling-rule 'rname)
 (frk::rk-format T :lisp-check-any-variables 'conde)
 (frk::rk-format T :isomorphic 'pname
-		   'pname1)
+                   'pname1)
 (frk::rk-format T :no-such-rule 'rule)
 (frk::rk-format T :rule-not-completely-compiled)
 (frk::rk-format T :excised-rule 'rname)
@@ -111,7 +111,7 @@
 (ml-cerror :keep-compiling :not-a-class 'class)
 (ml-cerror :ignore-lisp-var :cant-put 'value)
 (ml-cerror :ignore-command :illegal-special-cmd
-				 'carconds 'slot)
+                                 'carconds 'slot)
 (ml-cerror :keep-compiling :expected-closing 'conde)
 (ml-cerror :ignore-bind :only-16-bind 'varname)
 (ml-cerror :ignore-bind :illegal-bind 'varname)
@@ -119,7 +119,7 @@
 (ml-cerror :ignore-mbind :only-16-bind 'varnames)
 (ml-cerror :keep-compiling :var-no-binding-1 'varname)
 (ml-cerror :go-on :slot-facet-not-in-frame
-		 'slot 'facet 'class)
+                 'slot 'facet 'class)
 (ml-cerror :go-on :no-slot-in-class 'slot 'class)
 (ml-cerror :ignore-literalize :reserved-clisp-type 'classname)
 (ml-cerror :ignore-remove :non-variable)
@@ -127,11 +127,11 @@
 (ml-cerror :go-on :rete-changed)
 (ml-cerror :return-nil :not-in-rhs)
 (ml-cerror :go-on :var-no-binding
-		     'varname 'pname)
+                     'varname 'pname)
 (ml-cerror :go-on :var-no-binding-1 'varname)
 (ml-cerror :go-on :no-rhs-to-compile 'pname)
 (ml-cerror :return-nil-nil :var-not-in-production 'varname
-		     'pname)
+                     'pname)
 (ml-cerror :try-next :var-different 'varname 2)
 (ml-cerror :go-on :rule-in-bucket-not-defined 'rname 'bname)
 (ml-cerror :go-on :rule-list 'rnames)

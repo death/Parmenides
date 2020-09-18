@@ -35,7 +35,7 @@
 ;;my-agenda will cause it to count from 12 to 20.
 (setq my-agenda
       '((bucket-1 rule1 rule1a)
-	(bucket-2 rule2)
-	(bucket-3 rule3)))
+        (bucket-2 rule2)
+        (bucket-3 rule3)))
 
 (set-wm (anumber :value 12))

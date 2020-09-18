@@ -10,12 +10,12 @@
 
 (RULE have-baby
   :LHS ((person :age 10 (LABEL =p))
-	(boy :walks t (LABEL =b)))
+        (boy :walks t (LABEL =b)))
   :RHS (($modify =p :age 11 :child =b)))
 
 (RULE check-baby
   :LHS ((person :child =c)
-	(boy (LABEL =c)))
+        (boy (LABEL =c)))
   :RHS ((format t "Found person with child ~%")))
 
 (defun begin ()

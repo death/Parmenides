@@ -3,14 +3,14 @@
 
 (defun update-history ()
   (declare (special framename slotname facetname newval))
-  (if (and 
+  (if (and
        ;; new value isn't the same as the old value
        (not (eq newval (get-value framename slotname)))
        ;; history is a facet of the slot
        (memq 'history (get-facet-names framename slotname))
        ;; havent't already updated the history for this time period
        (not (= (car (get-facet framename slotname 'history))
-	       (- *now* 1))))
+               (- *now* 1))))
       (add-to-facet
        framename
        slotname
@@ -115,7 +115,7 @@
 (def-frame specialization-of (is-a (relation) propagate nil)
   combination-type first
   slots-inherited (value '(space operator effect
-			    (s-constraints append) (g-constraints append)))
+                            (s-constraints append) (g-constraints append)))
   )
 
 (literalize update-clustering ()
@@ -126,11 +126,11 @@
 (literalize delete-clusters-with-parent ()
   parent nil                ; the parent
   )
- 
+
 (literalize an-operator ()
   name nil                  ; name of the function which is the operator
   parameters nil
-  types nil                 ; the types of the parameters  
+  types nil                 ; the types of the parameters
   number-of-parameters nil  ; number of parameters that function has
   )
 
@@ -221,7 +221,7 @@
  nil
  :name 'vote-for-parameter-based-on-urgency-and-minimal-distance-g-constraint
  :strength '(value 100.0 history nil))
-     
+
 (make-a-slot nil :name 'location :type 'point)
 (make-a-slot nil :name 'rotation :type 'point)
 (make-a-slot nil :name 'enclosure :type 'number)

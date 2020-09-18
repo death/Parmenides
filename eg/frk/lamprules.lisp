@@ -3,19 +3,19 @@
 
 (rule explore
     :lhs (
-	  (seen-object :name "o")
-	  (<ABS> (touching-object))
-	 )
+          (seen-object :name "o")
+          (<ABS> (touching-object))
+         )
     :rhs (
-	  (move-forward-2D 100.0 1)
-	 )
+          (move-forward-2D 100.0 1)
+         )
 )
 (rule back-away-from-wall
     :lhs (
-	  (touching-object)
-	 )
+          (touching-object)
+         )
     :rhs (
-	  (move-backward-2D 20.0 1)
-	  (turn-right 1 10.0)
-	 )
+          (move-backward-2D 20.0 1)
+          (turn-right 1 10.0)
+         )
 )
