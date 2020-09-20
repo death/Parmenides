@@ -1974,7 +1974,6 @@
 
 (defun testify2 (class slot facet0 thing)
   (let* ((facet1 (if facet0 (parmenides::assure-keyword facet0)))
-         (slot (parmenides::assure-current slot))
          (facet (or facet1 (if (facetedp class slot) :value))))
     (cond ((eq facet :value)
            (list (parmenides::smash class "-" slot ".VALUE") thing))

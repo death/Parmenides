@@ -621,7 +621,7 @@
 
 ;;; Literalize now has the same syntax, and almost the same semantics, as
 ;;; Def-frame.  Example: (literalize goal () :parent NO :action run)
-(defmacro literalize (classname cplist &rest plist)
+(defmacro literalize (classname cplist &body plist)
   (cond ;; ((correct-common-p classname)
         ;;  (ml-cerror :ignore-literalize :reserved-clisp-type classname)
         ;;  NIL)

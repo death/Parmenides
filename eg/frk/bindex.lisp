@@ -1,5 +1,10 @@
 ;;; This is an example of using the FRulekit BIND command on the LHS.
 
+(defpackage #:frulekit.bindex
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.bindex)
+
 (literalize table ()
   weight NIL
   max NIL)

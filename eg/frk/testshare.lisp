@@ -1,5 +1,10 @@
 ;;; Test case for FRulekit shared memory.
 
+(defpackage #:frulekit.testshare
+  (:use #:cl #:frulekit))
+
+(in-package #:frulekit.testshare)
+
 (literalize c1 ()
   s1 ()
   s2 ())
