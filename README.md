@@ -12,8 +12,9 @@ Copyright (C) 1990  Carnegie Mellon University
 community. Changes are made to it that may be backwards incompatible.
 At some point a decision may be made to call this Version 2.0.
 
-**Note**: Also included is the frame-based production system FRulekit,
-which was written by the same author and that makes use of Parmenides.
+**Note**: Also included is the frame-based production system
+[FRulekit](FRulekit.md), which was written by the same authors and
+that makes use of Parmenides.
 
 - set-class&instances-facet uses eval, should change to funcall
 
@@ -36,8 +37,6 @@ which was written by the same author and that makes use of Parmenides.
 - add some examples
 
 - stuff in Future Enhancements section
-
-- create markdown version of doc/frulekit.mss
 
 - get FRulekit examples to work
 
