@@ -10,6 +10,7 @@
  :frulekit-loaded "~%FRulekit cargado. Esta a su disposicion."
  :no-such-rule "No existe la regla ~S.~%La variable *RULE-NAMES* contiene la lista de las reglas definidas~%"
  :build-initialized "Build inicializado~%"
+ :rule-slots-not-plist "La especificacion de slots ~S no es una plist."
  :recompiling-rule "~%Recompilando la regla ~a..."
  :compiling-rule "~%Compilando la regla ~a..."
  :obsolete "~%Error, ~S es obsoleto; debe usar la nueva sintaxis."

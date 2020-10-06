@@ -625,6 +625,8 @@
 
 ;;; Defines the rule structure then compiles the LHS of the rule.
 (defmacro rule (rname &rest slots)
+  (when (oddp (length slots))
+    (ml-error :rule-slots-not-plist slots))
   `(progn
     (cond ((get ',rname 'defined)
            (excise ,rname)

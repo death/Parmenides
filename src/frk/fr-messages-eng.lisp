@@ -10,6 +10,7 @@
  :frulekit-loaded "~%FRulekit loaded. It is all yours."
  :no-such-rule "No such rule ~S, type *RULE-NAMES* for list of rule names~%"
  :build-initialized "Build initialized~%"
+ :rule-slots-not-plist "Slots specification ~S is not a plist."
  :recompiling-rule "~%Re-compiling rule ~a..."
  :compiling-rule "~%Compiling rule ~a..."
  :obsolete "~%Error, ~S is obsolete, you must use the new sytnax."
