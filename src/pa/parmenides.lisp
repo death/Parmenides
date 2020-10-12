@@ -292,6 +292,8 @@
                              (frame-class ,generic-frame))))
 
   (defmacro keyword-to-current (keyword)
+    ;; FIXME: Won't a simple FIND-SYMBOL do?  It's also strange to
+    ;; need to convert keywords to symbols in the current package.
     `(if (find-symbol (symbol-name ,keyword))
          (intern (symbol-name ,keyword))
          NIL))
@@ -1390,6 +1392,9 @@
 (defun pa-eval (exp)
   (push exp *THINGS-TO-EVAL*))
 
+;;; If the cslots plist contains an :IS-A property, ASSURE-ISA-LIST
+;;; makes sure that the property value is a list.  It does this by
+;;; modifying structure.
 (defun assure-isa-list (cslots)
   (do ((cslot cslots (cddr cslot)))
       ((null cslot) cslots)
@@ -1426,6 +1431,9 @@
 ;;; frame, which is created and filled in with the default values.
 (defmacro def-frame (name cslots &rest slots)
   (setq *THINGS-TO-EVAL* NIL)
+  ;; Operators like KEYWORDIZE-CPLIST, and ASSURE-ISA-LIST are
+  ;; destructive, so make sure that cslots structure can be modified.
+  (setf cslots (copy-tree cslots))
   (keywordize-cplist cslots)
   (assure-isa-list cslots)
   (let* ((parents (check-parents (getf cslots :is-a)))
@@ -1436,6 +1444,9 @@
          (local-cached  (getf cslots :cache *DEFAULT*)) ;cslots is mangled
          (local-setable (getf cslots :setable *DEFAULT*)) ;after next line
          (local-getters (getf cslots :getters *DEFAULT*))
+         ;; FIXME: What's the point in having a destructive
+         ;; PLIST-UNION-NO-PROPAGATE, which is only used here, if
+         ;; we're just going to copy the result?
          (full-cplist (copy-list
                        (plist-union-no-propagate cslots parent-cplist)))
          (propagatep (getf full-cplist :propagate T))
@@ -1608,7 +1619,7 @@
 
 ;;; Filter out parent names which aren't classes.
 (defun check-parents (fnames)
-  (delete-if #'(lambda (fname)
+  (remove-if #'(lambda (fname)
                  (when (not (classp fname))
                    (ml-format t :parent-not-class fname)
                    T))
@@ -2515,13 +2526,18 @@
 (defun maybe-car (spec)
   (if (atom spec) spec (car spec)))
 
-;;; Adds value facet iff valueifyp is T. Mangles p1.
+;;; Creates a plist with properties from P1 and P2.  If a property
+;;; exists in both, then the property value in P1 is used.
+;;; Destructive with regards to P1.
 (defun plist-union-no-propagate (p1 p2)
   (do ((plist2 p2 (cddr plist2))
        (res NIL) (cached NIL))
-      ((null plist2) (nconc (nreverse res) p1))
+      ((null plist2)
+       ;; FIXME: Reimplements NRECONC.
+       (nconc (nreverse res) p1))
     (let ((sname (assure-keyword (car plist2))))
       (push sname res)
+      ;; FIXME: Should use GETF instead of MEMQ.
       (cond ((not (setq cached (memq sname p1)))
              (push (cadr plist2) res))
             (T (push (cadr cached) res)
@@ -2753,6 +2769,7 @@
 ;;; Destructively deletes the slot with the given name from the plist
 ;;; and returns the new plist.
 (defun delete-slot (sname plist)
+  ;; FIXME: This seems to reimplement REMF.
   (let ((orig plist))
     (do ((plist plist (cddr plist))
          (backone NIL plist))
